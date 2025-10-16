@@ -1,0 +1,20 @@
+/* Standard global styles */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure images/assets scale responsively */
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+/* Ensure the canvas element respects its container */
+canvas {
+    max-width: 100%;
+    height: auto;
+}
