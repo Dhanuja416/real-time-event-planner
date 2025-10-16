@@ -1,6 +1,0 @@
-@RealTime.API_HostAddress = http://localhost:5201
-
-GET {{RealTime.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
