@@ -4,6 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RealTime.API.Data;
 using RealTime.API.Hubs; // Required for TaskHub
+using Microsoft.AspNetCore.Identity; // NEW
+using Microsoft.AspNetCore.Authentication.JwtBearer; // NEW
+using Microsoft.IdentityModel.Tokens; // NEW
+using System.Text; // NEW
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +37,41 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// 1. Identity Service: Adds user management capabilities
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+// 2. JSON Serialization Fix: Required for Identity tables (to prevent cycle errors)
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+    );
+
+// 3. JWT Authentication Service: Defines the token validation scheme
+var jwtKey = builder.Configuration["JwtSettings:Key"];
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
+
 // SignalR Service Registration
 builder.Services.AddSignalR(); // <-- SignalR Service added here!
 
@@ -59,6 +98,9 @@ app.UseCors(MyAllowSpecificOrigins);
 
 // 2. Routing Middleware (Must be before Endpoints)
 app.UseRouting(); // This enables routing features like MapHub
+
+// IMPORTANT: Authentication must come BEFORE Authorization
+app.UseAuthentication();
 
 app.UseAuthorization();
 

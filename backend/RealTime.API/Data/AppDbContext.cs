@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore; // This namespace is essential
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // NEW
+using Microsoft.EntityFrameworkCore;
 using RealTime.API.Models;
-
+using Microsoft.AspNetCore.Identity;
 
 namespace RealTime.API.Data
 {
-    public class AppDbContext: DbContext
+    // MUST inherit from IdentityDbContext<IdentityUser> now
+    public class AppDbContext : IdentityDbContext<IdentityUser>
     {
-        // This constructor is used by Dependency Injection (DI)
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
