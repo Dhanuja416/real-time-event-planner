@@ -5,7 +5,9 @@ using RealTime.API.Data;
 using RealTime.API.DTOs;
 using RealTime.API.Models;
 using RealTime.API.Hubs;          // 🎯 NEW: Required for TaskHub
+using Microsoft.AspNetCore.Authorization;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class TasksController : ControllerBase
