@@ -7,20 +7,37 @@ import TaskForm from './TaskForm';
 const API_URL = 'https://localhost:7072/api/Tasks';
 const HUB_URL = 'https://localhost:7072/taskhub';
 
-const TaskList = () => {
+// Create an Axios instance that includes the token for every request
+const createApiClient = (token) => {
+  return axios.create({
+    headers: {
+      'Authorization': `Bearer ${token}`, // Attach the JWT token
+      'Content-Type': 'application/json'
+    }
+  });
+};
+
+const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const apiClient = createApiClient(token); // Create an instance with the current token
 
   // --- Core Data Fetch ---
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(API_URL);
+      // Use the authenticated apiClient instance
+      const response = await apiClient.get(API_URL); 
       setTasks(response.data);
     } catch (err) {
-      console.error('Error fetching tasks:', err);
-      setError('Failed to fetch tasks. Ensure the .NET API is running!');
+      console.error('Error fetching tasks:', err.response || err);
+      // Handle 401 specifically
+      if (err.response && err.response.status === 401) {
+          setError('Session expired. Please log in again.');
+      } else {
+          setError('Failed to fetch tasks. Ensure the .NET API is running!');
+      }
     } finally {
       setLoading(false);
     }
@@ -32,17 +49,15 @@ const TaskList = () => {
       id: task.id,
       title: task.title,
       description: task.description,
-      isComplete: !task.isComplete, // Flip the status
+      isComplete: !task.isComplete,
       dueDate: task.dueDate || null,
     };
 
     try {
-      // Send the PUT request with the full updated task DTO
-      await axios.put(`${API_URL}/${task.id}`, updatedTask);
-      // NOTE: The real-time sync will trigger fetchTasks() for all clients automatically!
+      // Use the authenticated apiClient instance
+      await apiClient.put(`${API_URL}/${task.id}`, updatedTask);
     } catch (err) {
       console.error('Error toggling task:', err);
-      setError('Failed to update task. Check API console.');
     }
   };
 
@@ -52,31 +67,36 @@ const TaskList = () => {
         return; 
     }
     try {
-      await axios.delete(`${API_URL}/${taskId}`);
-      // NOTE: The real-time sync will trigger fetchTasks() for all clients automatically!
+      // Use the authenticated apiClient instance
+      await apiClient.delete(`${API_URL}/${taskId}`);
     } catch (err) {
       console.error('Error deleting task:', err);
-      setError('Failed to delete task. Check API console.');
     }
   };
 
   // --- useEffect 1: Initial Data Load ---
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    // Only fetch if a token exists
+    if (token) {
+        fetchTasks();
+    }
+  }, [token]); // Re-run when the token changes
 
   // --- useEffect 2: SignalR Connection and Listener ---
   useEffect(() => {
     let connection = null;
+    
+    // SignalR only works if a token is present
+    if (!token) return;
 
     const startSignalR = async () => {
       try {
+        // Pass the token to the SignalR connection via a query parameter
         connection = new signalR.HubConnectionBuilder()
-          .withUrl(HUB_URL)
+          .withUrl(HUB_URL, { accessTokenFactory: () => token }) // Pass token here
           .withAutomaticReconnect()
           .build();
 
-        // 1. The Listener: When the server broadcasts, run fetchTasks to refresh the UI
         connection.on('TaskReceived', (task, action) => {
           console.log(`SignalR: Received ${action} for Task ${task.id}. Auto-fetching new data.`);
           fetchTasks(); 
@@ -92,14 +112,13 @@ const TaskList = () => {
 
     startSignalR();
 
-    // Cleanup function: Close the connection when the component unmounts
     return () => {
       if (connection) {
         connection.stop();
         console.log('SignalR Disconnected.');
       }
     };
-  }, []); 
+  }, [token]); // Re-run when the token changes
 
   // --- Rendering Logic ---
 
@@ -110,7 +129,6 @@ const TaskList = () => {
     <div className="max-w-4xl mx-auto p-4 md:p-8">
       {/* Task Form Component */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-2xl mb-10">
-        {/* Pass fetchTasks as the refresh callback */}
         <TaskForm onTaskCreated={fetchTasks} /> 
       </div>
       
@@ -162,20 +180,21 @@ const TaskList = () => {
                   {task.isComplete ? 'Completed' : 'Pending'}
                 </span>
 
-                {/* Date */}
-                <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
-                   {new Date(task.createdAt).toLocaleDateString()}
-                </span>
+                {/* Date and Delete Button */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
+                      {new Date(task.createdAt).toLocaleDateString()}
+                  </span>
 
-                {/* Delete Button (DELETE) */}
-                <button
-                  onClick={() => deleteTask(task.id)} // Calls DELETE API
-                  className="text-gray-500 hover:text-red-500 transition duration-150 p-1 rounded-full hover:bg-gray-700"
-                  aria-label={`Delete task ${task.title}`}
-                >
-                  {/* Trash Icon (Unicode character) */}
-                  🗑️ 
-                </button>
+                  {/* Delete Button (DELETE) */}
+                  <button
+                    onClick={() => deleteTask(task.id)} // Calls DELETE API
+                    className="text-gray-500 hover:text-red-500 transition duration-150 p-1 rounded-full hover:bg-gray-700"
+                    aria-label={`Delete task ${task.title}`}
+                  >
+                    🗑️ 
+                  </button>
+                </div>
               </div>
             </div>
           ))

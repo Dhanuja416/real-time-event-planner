@@ -30,8 +30,8 @@
               "Title": "TasksController.cs",
               "DocumentMoniker": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\TasksController.cs",
               "RelativeDocumentMoniker": "RealTime.API\\Controllers\\TasksController.cs",
-              "ToolTip": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\TasksController.cs*",
-              "RelativeToolTip": "RealTime.API\\Controllers\\TasksController.cs*",
+              "ToolTip": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\TasksController.cs",
+              "RelativeToolTip": "RealTime.API\\Controllers\\TasksController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAALAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-19T13:31:24.084Z",
@@ -43,12 +43,11 @@
               "Title": "AuthController.cs",
               "DocumentMoniker": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\AuthController.cs",
               "RelativeDocumentMoniker": "RealTime.API\\Controllers\\AuthController.cs",
-              "ToolTip": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\AuthController.cs*",
-              "RelativeToolTip": "RealTime.API\\Controllers\\AuthController.cs*",
+              "ToolTip": "D:\\Real Time Notes Application\\real-time-event-planner\\backend\\RealTime.API\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "RealTime.API\\Controllers\\AuthController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAFIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-19T13:30:30.47Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-19T13:30:30.47Z"
             },
             {
               "$type": "Bookmark",
