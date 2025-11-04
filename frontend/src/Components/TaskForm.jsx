@@ -1,79 +1,87 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Plus } from 'lucide-react';
 
-// Base URL must match your running .NET API port!
 const API_URL = 'https://localhost:7072/api/Tasks';
 
-const TaskForm = ({ onTaskCreated }) => {
+const createApiClient = (token) => {
+  return axios.create({
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+};
+
+const TaskForm = ({ onTaskCreated, theme }) => { // 🎯 Receives theme
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Get the token from localStorage for this component's request
+  const token = localStorage.getItem('jwtToken');
+  const apiClient = createApiClient(token);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title) return;
-
+    e.preventDefault(); 
     setLoading(true);
     setError(null);
 
-    // DTO object matches the CreateTaskDto on the .NET side
     const newTask = {
       title,
       description,
-      // DueDate omitted for simplicity in form
+      // DueDate omitted for brevity
     };
 
     try {
-      // Send the POST request
-      await axios.post(API_URL, newTask);
+      await apiClient.post(API_URL, newTask);
       
-      // Clear form and trigger list refresh
       setTitle('');
       setDescription('');
       onTaskCreated(); 
     } catch (err) {
       console.error('Error creating task:', err);
-      setError('Failed to create task. Check if the .NET API is running and CORS is configured.');
+      setError('Failed to create task. Authentication or API error.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClasses = "w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150";
+  const headerColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
+
   return (
-    <div className="bg-gray-800 p-6 rounded-xl shadow-2xl mb-10 border border-indigo-700">
-      <h3 className="text-2xl font-bold mb-4 text-indigo-300">Add New Task</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h3 className={`text-xl font-semibold ${headerColor}`}>Quick Add Task</h3>
+      
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      
+      <div className="flex space-x-3">
         <input
           type="text"
-          placeholder="Task Title (e.g., Implement SignalR Client)"
+          placeholder="Task Title (required)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
           disabled={loading}
-          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
+          className={inputClasses}
         />
         <textarea
-          placeholder="Detailed Description (optional)"
+          placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           disabled={loading}
-          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 h-24 resize-none"
+          className={`${inputClasses} flex-1 resize-none h-auto`}
         />
-        {error && <p className="text-red-400 font-medium">{error}</p>}
-        <button 
-          type="submit" 
-          disabled={!title || loading}
-          className={`w-full py-3 rounded-lg font-semibold transition duration-200 ${
-            !title || loading 
-              ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/50'
-          }`}
+        
+        <button type="submit" disabled={!title || loading}
+          className="flex items-center justify-center py-3 px-6 rounded-lg bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/50 hover:bg-blue-700 transition duration-150 disabled:opacity-50 whitespace-nowrap"
         >
-          {loading ? 'Submitting...' : 'Create New Task'}
+          {loading ? 'Adding...' : <Plus size={20} />}
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 };
 
