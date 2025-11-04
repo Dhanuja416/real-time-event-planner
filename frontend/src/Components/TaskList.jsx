@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as signalR from '@microsoft/signalr';
 import TaskForm from './TaskForm';
+import { Trash2 } from 'lucide-react'; // Icon for delete
 
 // Base URLs
 const API_URL = 'https://localhost:7072/api/Tasks';
@@ -11,28 +12,27 @@ const HUB_URL = 'https://localhost:7072/taskhub';
 const createApiClient = (token) => {
   return axios.create({
     headers: {
-      'Authorization': `Bearer ${token}`, // Attach the JWT token
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
 };
 
-const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
+const TaskList = ({ token, theme }) => { // 🎯 Receives theme
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const apiClient = createApiClient(token); // Create an instance with the current token
+  const apiClient = createApiClient(token); 
 
   // --- Core Data Fetch ---
   const fetchTasks = async () => {
+    // ... (rest of the fetch logic remains the same)
     try {
       setLoading(true);
-      // Use the authenticated apiClient instance
       const response = await apiClient.get(API_URL); 
-      setTasks(response.data);
+      setTasks(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Sort by newest first
     } catch (err) {
       console.error('Error fetching tasks:', err.response || err);
-      // Handle 401 specifically
       if (err.response && err.response.status === 401) {
           setError('Session expired. Please log in again.');
       } else {
@@ -49,12 +49,11 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
       id: task.id,
       title: task.title,
       description: task.description,
-      isComplete: !task.isComplete,
+      isComplete: !task.isComplete, 
       dueDate: task.dueDate || null,
     };
 
     try {
-      // Use the authenticated apiClient instance
       await apiClient.put(`${API_URL}/${task.id}`, updatedTask);
     } catch (err) {
       console.error('Error toggling task:', err);
@@ -67,7 +66,6 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
         return; 
     }
     try {
-      // Use the authenticated apiClient instance
       await apiClient.delete(`${API_URL}/${taskId}`);
     } catch (err) {
       console.error('Error deleting task:', err);
@@ -76,24 +74,20 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
 
   // --- useEffect 1: Initial Data Load ---
   useEffect(() => {
-    // Only fetch if a token exists
     if (token) {
         fetchTasks();
     }
-  }, [token]); // Re-run when the token changes
+  }, [token]);
 
   // --- useEffect 2: SignalR Connection and Listener ---
   useEffect(() => {
     let connection = null;
-    
-    // SignalR only works if a token is present
     if (!token) return;
 
     const startSignalR = async () => {
       try {
-        // Pass the token to the SignalR connection via a query parameter
         connection = new signalR.HubConnectionBuilder()
-          .withUrl(HUB_URL, { accessTokenFactory: () => token }) // Pass token here
+          .withUrl(HUB_URL, { accessTokenFactory: () => token })
           .withAutomaticReconnect()
           .build();
 
@@ -118,22 +112,29 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
         console.log('SignalR Disconnected.');
       }
     };
-  }, [token]); // Re-run when the token changes
+  }, [token]);
 
   // --- Rendering Logic ---
+  
+  if (loading) return <p className="text-gray-700 dark:text-gray-300 p-4">Loading tasks...</p>;
+  if (error) return <p className="text-red-600 dark:text-red-400 p-4 font-semibold">{error}</p>;
 
-  if (loading) return <p className="text-gray-400 p-4">Loading tasks...</p>;
-  if (error) return <p className="text-red-500 p-4">Error: {error}</p>;
+  // Conditional classes based on the theme
+  const cardBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const inputBg = theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100';
+  const headingColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8">
-      {/* Task Form Component */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-2xl mb-10">
-        <TaskForm onTaskCreated={fetchTasks} /> 
+      <h1 className={`text-3xl font-bold mb-6 ${headingColor}`}>Dashboard</h1>
+      
+      {/* Task Form Component (Light/Dark Card) */}
+      <div className={`p-6 rounded-xl shadow-xl mb-10 ${cardBg} border border-gray-200 dark:border-gray-700`}>
+        <TaskForm onTaskCreated={fetchTasks} theme={theme} />
       </div>
       
       {/* Task List Display */}
-      <h2 className="text-2xl font-bold mb-6 text-gray-200 border-b border-gray-700 pb-2">
+      <h2 className={`text-2xl font-bold mb-6 ${headingColor} border-b border-gray-300 dark:border-gray-700 pb-2`}>
         Project Tasks ({tasks.length})
       </h2>
       
@@ -144,8 +145,8 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
           tasks.map((task) => (
             <div 
               key={task.id} 
-              className={`flex items-center justify-between p-4 rounded-lg shadow-md transition duration-300 ease-in-out 
-                ${task.isComplete ? 'bg-green-900/40 border-l-4 border-green-500' : 'bg-gray-800 border-l-4 border-blue-500'}
+              className={`flex items-center justify-between p-4 rounded-lg shadow-sm transition duration-300 ease-in-out 
+                ${cardBg} border border-gray-200 dark:border-gray-700
               `}
             >
               {/* Task Details & Checkbox */}
@@ -154,20 +155,21 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
                 <input 
                   type="checkbox"
                   checked={task.isComplete}
-                  onChange={() => toggleTask(task)} // Calls PUT API
-                  className={`w-5 h-5 rounded transition duration-300 ease-in-out 
-                    ${task.isComplete ? 'text-green-500 focus:ring-green-500' : 'text-blue-500 focus:ring-blue-500'}
+                  onChange={() => toggleTask(task)} 
+                  className={`w-5 h-5 rounded-md border-2 cursor-pointer 
+                    ${task.isComplete ? 'text-emerald-500 border-emerald-500 focus:ring-emerald-500' : 'text-blue-500 border-gray-400 focus:ring-blue-500'}
+                    ${inputBg}
                   `}
                 />
                 
                 {/* Title and Description */}
                 <div className="flex-1 overflow-hidden">
                   <h3 className={`font-semibold text-lg truncate 
-                    ${task.isComplete ? 'text-green-300 line-through' : 'text-blue-300'}
+                    ${task.isComplete ? 'text-emerald-600 dark:text-emerald-400 line-through' : headingColor}
                   `}>
                     {task.title}
                   </h3>
-                  <p className="text-gray-400 text-sm mt-0.5 truncate">{task.description}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">{task.description}</p>
                 </div>
               </div>
               
@@ -175,26 +177,19 @@ const TaskList = ({ token }) => { // 🎯 Now receives the token as a prop
               <div className="flex items-center space-x-4 ml-4">
                  {/* Status Badge */}
                 <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap
-                  ${task.isComplete ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-200'}
+                  ${task.isComplete ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'}
                 `}>
                   {task.isComplete ? 'Completed' : 'Pending'}
                 </span>
 
-                {/* Date and Delete Button */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
-                      {new Date(task.createdAt).toLocaleDateString()}
-                  </span>
-
-                  {/* Delete Button (DELETE) */}
-                  <button
-                    onClick={() => deleteTask(task.id)} // Calls DELETE API
-                    className="text-gray-500 hover:text-red-500 transition duration-150 p-1 rounded-full hover:bg-gray-700"
-                    aria-label={`Delete task ${task.title}`}
-                  >
-                    🗑️ 
-                  </button>
-                </div>
+                {/* Delete Button (DELETE) */}
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition duration-150"
+                  aria-label={`Delete task ${task.title}`}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
           ))
