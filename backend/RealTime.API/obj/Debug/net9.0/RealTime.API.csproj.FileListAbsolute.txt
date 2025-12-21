@@ -122,7 +122,6 @@ D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\staticwebassets.development.json
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\staticwebassets.build.endpoints.json
-D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\RealTime.4808A529.Up2Date
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\RealTime.API.dll
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\refint\RealTime.API.dll
@@ -149,3 +148,6 @@ D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\Debug\net9.0\Newtonsoft.Json.dll
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\Debug\net9.0\Newtonsoft.Json.Bson.dll
 D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
+D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
+D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\Debug\net9.0\SendGrid.dll
+D:\Real Time Notes Application\real-time-event-planner\backend\RealTime.API\bin\Debug\net9.0\StarkbankEcdsa.dll
