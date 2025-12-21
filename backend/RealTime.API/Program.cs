@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RealTime.API.Data;
 using RealTime.API.Hubs; // Required for TaskHub
+using RealTime.API.Services; // Required for Email Service
 using Microsoft.AspNetCore.Identity; // NEW
 using Microsoft.AspNetCore.Authentication.JwtBearer; // NEW
 using Microsoft.IdentityModel.Tokens; // NEW
@@ -37,10 +38,24 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// 1. Identity Service: Adds user management capabilities
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+// 1. Identity Service: Adds user management capabilities with security settings
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+    // Sign-in settings
+    options.SignIn.RequireConfirmedEmail = true;
+    
+    // Password requirements
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+    
+    // User settings
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
 // 2. JSON Serialization Fix: Required for Identity tables (to prevent cycle errors)
 builder.Services.AddControllers()
@@ -74,6 +89,9 @@ builder.Services.AddAuthentication(options =>
 
 // SignalR Service Registration
 builder.Services.AddSignalR(); // <-- SignalR Service added here!
+
+// Email Service Registration
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 
 // API Services
 builder.Services.AddControllers();
