@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using RealTime.API.DTOs;
+using RealTime.API.Services;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 
@@ -12,11 +14,13 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
 
-    public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration)
+    public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration, IEmailService emailService)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _emailService = emailService;
     }
 
     // POST: api/Auth/register
@@ -31,14 +35,22 @@ public class AuthController : ControllerBase
         {
             Email = model.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
-            UserName = model.Email // Use Email as Username for simplicity
+            UserName = model.Email, // Use Email as Username for simplicity
+            EmailConfirmed = false  // User must verify email before login
         };
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (!result.Succeeded)
             return StatusCode(StatusCodes.Status500InternalServerError, new { Status = "Error", Message = "User creation failed! " + string.Join(", ", result.Errors.Select(e => e.Description)) });
 
-        return Ok(new { Status = "Success", Message = "User created successfully!" });
+        // Generate email confirmation token
+        var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebUtility.UrlEncode(emailToken);
+
+        // Send verification email
+        await _emailService.SendEmailVerificationAsync(user.Email, encodedToken);
+
+        return Ok(new { Status = "Success", Message = "Registration successful! Please check your email to verify your account." });
     }
 
     // POST: api/Auth/login
@@ -46,7 +58,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDto model)
     {
         var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        
+        if (user == null)
+            return Unauthorized(new { Status = "Error", Message = "Invalid email or password." });
+
+        // Check if email is verified
+        if (!user.EmailConfirmed)
+            return Unauthorized(new { Status = "Error", Message = "Please verify your email first." });
+
+        // Check password
+        if (await _userManager.CheckPasswordAsync(user, model.Password))
         {
             var token = GetToken(user);
 
@@ -56,7 +77,79 @@ public class AuthController : ControllerBase
                 expiration = token.ValidTo
             });
         }
-        return Unauthorized();
+        
+        return Unauthorized(new { Status = "Error", Message = "Invalid email or password." });
+    }
+
+    // POST: api/Auth/verify-email
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        
+        if (user == null)
+            return NotFound(new { Status = "Error", Message = "User not found." });
+
+        if (user.EmailConfirmed)
+            return BadRequest(new { Status = "Error", Message = "Email is already verified." });
+
+        // URL decode the token
+        var decodedToken = WebUtility.UrlDecode(model.Token);
+
+        // Confirm email
+        var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { Status = "Error", Message = $"Email verification failed: {errors}" });
+        }
+
+        return Ok(new { Status = "Success", Message = "Email verified successfully! You can now log in." });
+    }
+
+    // POST: api/Auth/forgot-password
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        
+        // For security, don't reveal if email exists or not
+        if (user == null)
+            return Ok(new { Status = "Success", Message = "If your email exists, you'll receive password reset instructions." });
+
+        // Generate password reset token
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebUtility.UrlEncode(resetToken);
+
+        // Send password reset email
+        await _emailService.SendPasswordResetAsync(user.Email, encodedToken);
+
+        return Ok(new { Status = "Success", Message = "If your email exists, you'll receive password reset instructions." });
+    }
+
+    // POST: api/Auth/reset-password
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        
+        if (user == null)
+            return NotFound(new { Status = "Error", Message = "User not found." });
+
+        // URL decode the token
+        var decodedToken = WebUtility.UrlDecode(model.Token);
+
+        // Reset password
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { Status = "Error", Message = $"Password reset failed: {errors}" });
+        }
+
+        return Ok(new { Status = "Success", Message = "Password reset successfully! You can now log in." });
     }
 
     private JwtSecurityToken GetToken(IdentityUser user)
