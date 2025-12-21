@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE_URL = 'https://localhost:7072/api/Auth';
 
 const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +29,8 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
         onAuthSuccess(token);
         setMessage('Login successful! Welcome.');
       } else {
-        setMessage('Registration successful! Please log in.');
+        setMessage('Registration successful! Please check your email to verify your account.');
+        setEmail('');
         setIsLogin(true);
       }
     } catch (error) {
@@ -70,6 +73,19 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
           {loading ? 'Processing...' : isLogin ? 'Log In' : 'Register'}
         </button>
       </form>
+
+      {/* Forgot Password Link - Only show on login */}
+      {isLogin && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => navigate('/forgot-password')}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition duration-150"
+            disabled={loading}
+          >
+            Forgot your password?
+          </button>
+        </div>
+      )}
 
       {/* Switch Link */}
       <button
