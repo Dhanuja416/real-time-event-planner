@@ -1,0 +1,11 @@
+
+# Visual Studio
+backend/.vs/
+backend/**/bin/
+backend/**/obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
