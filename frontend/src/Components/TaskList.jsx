@@ -5,7 +5,7 @@ import TaskForm from './TaskForm';
 import { Trash2 } from 'lucide-react'; // Icon for delete
 
 // Base URLs
-const API_URL = 'https://localhost:7072/api/Tasks';
+const API_URL = 'https://localhost:7072/api/Documents';
 const HUB_URL = 'https://localhost:7072/taskhub';
 
 // Create an Axios instance that includes the token for every request
@@ -19,24 +19,24 @@ const createApiClient = (token) => {
 };
 
 const TaskList = ({ token, theme }) => { // 🎯 Receives theme
-  const [tasks, setTasks] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiClient = createApiClient(token); 
 
   // --- Core Data Fetch ---
-  const fetchTasks = async () => {
+  const fetchDocuments = async () => {
     // ... (rest of the fetch logic remains the same)
     try {
       setLoading(true);
       const response = await apiClient.get(API_URL); 
-      setTasks(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Sort by newest first
+      setDocuments(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Sort by newest first
     } catch (err) {
       console.error('Error fetching tasks:', err.response || err);
       if (err.response && err.response.status === 401) {
           setError('Session expired. Please log in again.');
       } else {
-          setError('Failed to fetch tasks. Ensure the .NET API is running!');
+          setError('Failed to fetch documents. Ensure the .NET API is running!');
       }
     } finally {
       setLoading(false);
@@ -44,38 +44,36 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
   };
 
   // --- CRUD Logic: PUT (Toggle) ---
-  const toggleTask = async (task) => {
-    const updatedTask = {
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      isComplete: !task.isComplete, 
-      dueDate: task.dueDate || null,
+  const toggleDocument = async (doc) => {
+    const updatedDoc = {
+      id: doc.id,
+      title: doc.title,
+      content: doc.content || doc.description,
     };
 
     try {
-      await apiClient.put(`${API_URL}/${task.id}`, updatedTask);
+      await apiClient.put(`${API_URL}/${doc.id}`, updatedDoc);
     } catch (err) {
-      console.error('Error toggling task:', err);
+      console.error('Error updating document:', err);
     }
   };
 
   // --- CRUD Logic: DELETE ---
-  const deleteTask = async (taskId) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) {
+  const deleteDocument = async (docId) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) {
         return; 
     }
     try {
-      await apiClient.delete(`${API_URL}/${taskId}`);
+      await apiClient.delete(`${API_URL}/${docId}`);
     } catch (err) {
-      console.error('Error deleting task:', err);
+      console.error('Error deleting document:', err);
     }
   };
 
   // --- useEffect 1: Initial Data Load ---
   useEffect(() => {
     if (token) {
-        fetchTasks();
+        fetchDocuments();
     }
   }, [token]);
 
@@ -91,9 +89,9 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
           .withAutomaticReconnect()
           .build();
 
-        connection.on('TaskReceived', (task, action) => {
-          console.log(`SignalR: Received ${action} for Task ${task.id}. Auto-fetching new data.`);
-          fetchTasks(); 
+        connection.on('DocumentReceived', (doc, action) => {
+          console.log(`SignalR: Received ${action} for Document ${doc.id}. Auto-fetching new data.`);
+          fetchDocuments(); 
         });
 
         await connection.start();
@@ -116,7 +114,7 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
 
   // --- Rendering Logic ---
   
-  if (loading) return <p className="text-gray-700 dark:text-gray-300 p-4">Loading tasks...</p>;
+  if (loading) return <p className="text-gray-700 dark:text-gray-300 p-4">Loading documents...</p>;
   if (error) return <p className="text-red-600 dark:text-red-400 p-4 font-semibold">{error}</p>;
 
   // Conditional classes based on the theme
@@ -130,63 +128,50 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
       
       {/* Task Form Component (Light/Dark Card) */}
       <div className={`p-6 rounded-xl shadow-xl mb-10 ${cardBg} border border-gray-200 dark:border-gray-700`}>
-        <TaskForm onTaskCreated={fetchTasks} theme={theme} />
+        <TaskForm onDocumentCreated={fetchDocuments} theme={theme} />
       </div>
       
-      {/* Task List Display */}
+      {/* Document List Display */}
       <h2 className={`text-2xl font-bold mb-6 ${headingColor} border-b border-gray-300 dark:border-gray-700 pb-2`}>
-        Project Tasks ({tasks.length})
+        My Documents ({documents.length})
       </h2>
       
       <div className="space-y-4">
-        {tasks.length === 0 ? (
-          <p className="text-gray-500">No tasks found. Create a new task above!</p>
+        {documents.length === 0 ? (
+          <p className="text-gray-500">No documents found. Create a new document above!</p>
         ) : (
-          tasks.map((task) => (
+          documents.map((doc) => (
             <div 
-              key={task.id} 
+              key={doc.id} 
               className={`flex items-center justify-between p-4 rounded-lg shadow-sm transition duration-300 ease-in-out 
                 ${cardBg} border border-gray-200 dark:border-gray-700
               `}
             >
-              {/* Task Details & Checkbox */}
+              {/* Document Details */}
               <div className="flex items-center space-x-3 w-full">
-                {/* Checkbox (Toggle PUT) */}
-                <input 
-                  type="checkbox"
-                  checked={task.isComplete}
-                  onChange={() => toggleTask(task)} 
-                  className={`w-5 h-5 rounded-md border-2 cursor-pointer 
-                    ${task.isComplete ? 'text-emerald-500 border-emerald-500 focus:ring-emerald-500' : 'text-blue-500 border-gray-400 focus:ring-blue-500'}
-                    ${inputBg}
-                  `}
-                />
+                {/* Document Icon (placeholder for now) */}
+                <div 
+                  className="w-5 h-5 rounded-md border-2 border-gray-400 bg-gray-100 dark:bg-gray-700" 
+                ></div>
                 
-                {/* Title and Description */}
+                {/* Title and Content Preview */}
                 <div className="flex-1 overflow-hidden">
-                  <h3 className={`font-semibold text-lg truncate 
-                    ${task.isComplete ? 'text-emerald-600 dark:text-emerald-400 line-through' : headingColor}
-                  `}>
-                    {task.title}
+                  <h3 className={`font-semibold text-lg truncate ${headingColor}`}>
+                    {doc.title}
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">{task.description}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">
+                    {doc.content || doc.description || 'Empty document'}
+                  </p>
                 </div>
               </div>
               
-              {/* Status and Actions */}
+              {/* Actions */}
               <div className="flex items-center space-x-4 ml-4">
-                 {/* Status Badge */}
-                <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap
-                  ${task.isComplete ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'}
-                `}>
-                  {task.isComplete ? 'Completed' : 'Pending'}
-                </span>
-
                 {/* Delete Button (DELETE) */}
                 <button
-                  onClick={() => deleteTask(task.id)}
+                  onClick={() => deleteDocument(doc.id)}
                   className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition duration-150"
-                  aria-label={`Delete task ${task.title}`}
+                  aria-label={`Delete document ${doc.title}`}
                 >
                   <Trash2 size={16} />
                 </button>

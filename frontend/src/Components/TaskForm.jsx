@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
 
-const API_URL = 'https://localhost:7072/api/Tasks';
+const API_URL = 'https://localhost:7072/api/Documents';
 
 const createApiClient = (token) => {
   return axios.create({
@@ -13,9 +13,9 @@ const createApiClient = (token) => {
   });
 };
 
-const TaskForm = ({ onTaskCreated, theme }) => { // 🎯 Receives theme
+const TaskForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -28,21 +28,20 @@ const TaskForm = ({ onTaskCreated, theme }) => { // 🎯 Receives theme
     setLoading(true);
     setError(null);
 
-    const newTask = {
+    const newDocument = {
       title,
-      description,
-      // DueDate omitted for brevity
+      content,
     };
 
     try {
-      await apiClient.post(API_URL, newTask);
+      await apiClient.post(API_URL, newDocument);
       
       setTitle('');
-      setDescription('');
-      onTaskCreated(); 
+      setContent('');
+      onDocumentCreated(); 
     } catch (err) {
-      console.error('Error creating task:', err);
-      setError('Failed to create task. Authentication or API error.');
+      console.error('Error creating document:', err);
+      setError('Failed to create document. Authentication or API error.');
     } finally {
       setLoading(false);
     }
@@ -53,14 +52,14 @@ const TaskForm = ({ onTaskCreated, theme }) => { // 🎯 Receives theme
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className={`text-xl font-semibold ${headerColor}`}>Quick Add Task</h3>
+      <h3 className={`text-xl font-semibold ${headerColor}`}>Create New Document</h3>
       
       {error && <p className="text-red-500 text-sm">{error}</p>}
       
       <div className="flex space-x-3">
         <input
           type="text"
-          placeholder="Task Title (required)"
+          placeholder="Document Title (required)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -68,9 +67,9 @@ const TaskForm = ({ onTaskCreated, theme }) => { // 🎯 Receives theme
           className={inputClasses}
         />
         <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Content (optional - rich editor coming soon)"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
           disabled={loading}
           className={`${inputClasses} flex-1 resize-none h-auto`}
         />
