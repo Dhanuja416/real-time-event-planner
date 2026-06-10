@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import TaskList from './Components/TaskList';
+import DocumentList from './Components/DocumentList';
 import AuthForm from './Components/AuthForm';
 import VerifyEmail from './Components/VerifyEmail';
 import ForgotPassword from './Components/ForgotPassword';
 import ResetPassword from './Components/ResetPassword';
+import DocumentEditor from './Components/DocumentEditor';
 import './App.css'; 
 import { Sun, Moon, LogOut } from 'lucide-react'; // Using lucide-react for icons
 
@@ -105,7 +106,47 @@ function App() {
                 </header>
 
                 <main className="container mx-auto py-8">
-                  <TaskList token={token} theme={theme} />
+                  <DocumentList token={token} theme={theme} />
+                </main>
+              </div>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+
+        {/* Protected Route - Document Editor */}
+        <Route 
+          path="/documents/:id" 
+          element={
+            token ? (
+              <div className={`min-h-screen ${backgroundClasses}`}>
+                <header className={`border-b ${headerClasses} border-gray-200 dark:border-gray-800`}>
+                  <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Editor</div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={toggleTheme}
+                        className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"
+                        aria-label="Toggle theme"
+                      >
+                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                      </button>
+
+                      <button 
+                        onClick={handleLogout}
+                        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-600 dark:border-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition duration-150 flex items-center space-x-2"
+                      >
+                        <LogOut size={16} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+
+                <main className="container mx-auto py-8">
+                  <DocumentEditor theme={theme} />
                 </main>
               </div>
             ) : (

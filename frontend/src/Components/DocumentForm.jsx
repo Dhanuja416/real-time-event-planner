@@ -14,7 +14,7 @@ const createApiClient = (token) => {
   });
 };
 
-const TaskForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
+const DocumentForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,4 +85,4 @@ const TaskForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
   );
 };
 
-export default TaskForm;
+export default DocumentForm;

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // NEW
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // NEW
 using Microsoft.EntityFrameworkCore;
 using RealTime.API.Models;
 using Microsoft.AspNetCore.Identity;
@@ -19,6 +19,7 @@ namespace RealTime.API.Data
         // DbSets for new Document models
         public DbSet<Document> Documents { get; set; }
         public DbSet<DocumentPermission> DocumentPermissions { get; set; }
+        public DbSet<DocumentVersion> DocumentVersions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,6 +31,13 @@ namespace RealTime.API.Data
                 .WithMany()
                 .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure Document.LastEditedBy relationship
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.LastEditedBy)
+                .WithMany()
+                .HasForeignKey(d => d.LastEditedById)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Configure Document.Permissions relationship
             modelBuilder.Entity<Document>()
@@ -49,6 +57,19 @@ namespace RealTime.API.Data
             modelBuilder.Entity<DocumentPermission>()
                 .HasIndex(p => new { p.DocumentId, p.UserId })
                 .IsUnique();
+
+            // Configure DocumentVersion relationship
+            modelBuilder.Entity<DocumentVersion>()
+                .HasOne(d => d.Document)
+                .WithMany(d => d.Versions)
+                .HasForeignKey(d => d.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DocumentVersion>()
+                .HasOne(d => d.CreatedBy)
+                .WithMany()
+                .HasForeignKey(d => d.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

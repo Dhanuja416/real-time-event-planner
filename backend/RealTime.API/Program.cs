@@ -164,6 +164,7 @@ app.UseAuthorization();
 
 // SignalR Hub Endpoints
 app.MapHub<TaskHub>("/taskhub");
+app.MapHub<DocumentHub>("/documenthub");
 
 // Controller Endpoints
 app.MapControllers();

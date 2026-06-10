@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as signalR from '@microsoft/signalr';
-import TaskForm from './TaskForm';
-import { Trash2 } from 'lucide-react'; // Icon for delete
+import DocumentForm from './DocumentForm';
+import { Trash2, FileText } from 'lucide-react'; // Icons
 
 // Base URLs from environment
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
@@ -19,12 +20,12 @@ const createApiClient = (token) => {
   });
 };
 
-const TaskList = ({ token, theme }) => { // 🎯 Receives theme
+const DocumentList = ({ token, theme }) => { // 🎯 Receives theme
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiClient = createApiClient(token); 
-
+  const navigate = useNavigate();
   // --- Core Data Fetch ---
   const fetchDocuments = async () => {
     // ... (rest of the fetch logic remains the same)
@@ -129,7 +130,7 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
       
       {/* Task Form Component (Light/Dark Card) */}
       <div className={`p-6 rounded-xl shadow-xl mb-10 ${cardBg} border border-gray-200 dark:border-gray-700`}>
-        <TaskForm onDocumentCreated={fetchDocuments} theme={theme} />
+        <DocumentForm onDocumentCreated={fetchDocuments} theme={theme} />
       </div>
       
       {/* Document List Display */}
@@ -149,19 +150,24 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
               `}
             >
               {/* Document Details */}
-              <div className="flex items-center space-x-3 w-full">
-                {/* Document Icon (placeholder for now) */}
+              <div 
+                className="flex items-center space-x-3 w-full cursor-pointer group"
+                onClick={() => navigate(`/documents/${doc.id}`)}
+              >
+                {/* Document Icon */}
                 <div 
-                  className="w-5 h-5 rounded-md border-2 border-gray-400 bg-gray-100 dark:bg-gray-700" 
-                ></div>
+                  className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 group-hover:scale-110 transition duration-150" 
+                >
+                  <FileText size={20} />
+                </div>
                 
                 {/* Title and Content Preview */}
                 <div className="flex-1 overflow-hidden">
-                  <h3 className={`font-semibold text-lg truncate ${headingColor}`}>
+                  <h3 className={`font-semibold text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition duration-150 truncate ${headingColor}`}>
                     {doc.title}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">
-                    {doc.content || doc.description || 'Empty document'}
+                    {doc.content || 'Empty document'}
                   </p>
                 </div>
               </div>
@@ -185,4 +191,4 @@ const TaskList = ({ token, theme }) => { // 🎯 Receives theme
   );
 };
 
-export default TaskList;
+export default DocumentList;

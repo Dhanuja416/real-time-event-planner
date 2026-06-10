@@ -20,8 +20,17 @@ namespace RealTime.API.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        // Y.js Collaborative state (serialized CRDT)
+        public byte[]? ContentBinary { get; set; }
+
+        public string? LastEditedById { get; set; }
+
+        public int Version { get; set; } = 1;
+
         // Navigation properties
         public IdentityUser? Owner { get; set; }
+        public IdentityUser? LastEditedBy { get; set; }
         public ICollection<DocumentPermission> Permissions { get; set; } = new List<DocumentPermission>();
+        public ICollection<DocumentVersion> Versions { get; set; } = new List<DocumentVersion>();
     }
 }
