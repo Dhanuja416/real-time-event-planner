@@ -5,7 +5,7 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
 const API_BASE_URL = `${API_BASE}/api/Auth`;
 
-const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
+const AuthForm = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -28,9 +28,9 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
         const token = response.data.token;
         localStorage.setItem('jwtToken', token);
         onAuthSuccess(token);
-        setMessage('Login successful! Welcome.');
+        setMessage('Welcome back. Your planner has loaded.');
       } else {
-        setMessage('Registration successful! Please check your email to verify your account.');
+        setMessage('Account registered. You may now log in instantly.');
         setEmail('');
         setIsLogin(true);
       }
@@ -46,21 +46,53 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
     }
   };
 
-  const inputClasses = "w-full p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600";
-  const headerTextColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
+  const inputClasses = "w-full p-3.5 rounded-xl glass-input placeholder-sand-light/40 text-sm tracking-wide";
+  const labelClasses = "block text-xs uppercase tracking-widest font-semibold text-gold-light/85 mb-1.5 ml-1";
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 md:p-12">
-      <h2 className={`text-4xl font-extrabold mb-8 ${headerTextColor}`}>{isLogin ? 'Welcome Back' : 'Get Started'}</h2>
-      <form onSubmit={handleSubmit} className="w-full space-y-5">
+    <div className="flex flex-col items-center justify-center p-8 md:p-12 animate-fade-in">
+      <div className="text-center mb-10">
+        <span className="text-xs uppercase tracking-widest text-gold-light/75 font-semibold">REAP Collaboration</span>
+        <h2 className="text-4xl font-serif font-bold text-luxury-gradient mt-2 tracking-wide">
+          {isLogin ? 'Sign In' : 'Create Account'}
+        </h2>
+        <p className="text-xs text-sand-light/70 dark:text-sand-light/60 mt-1 max-w-xs mx-auto">
+          {isLogin ? 'Enter your credentials to access your secure workspace.' : 'Register to begin collaborating in real-time.'}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="w-full space-y-6">
+        <div>
+          <label className={labelClasses}>Email Address</label>
+          <input 
+            type="email" 
+            placeholder="name@example.com" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+            className={inputClasses} 
+          />
+        </div>
         
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClasses} />
-        
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputClasses} />
+        <div>
+          <label className={labelClasses}>Password</label>
+          <input 
+            type="password" 
+            placeholder="••••••••" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+            className={inputClasses} 
+          />
+        </div>
 
         {/* Status/Error Message */}
         {message && (
-          <div className={`p-3 rounded-lg text-sm font-medium border ${message.startsWith('Error') ? 'bg-red-50 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300 dark:border-red-700' : 'bg-green-50 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300 dark:border-green-700'}`}>
+          <div className={`p-4 rounded-xl text-xs font-semibold tracking-wide border leading-relaxed ${
+            message.startsWith('Error') 
+              ? 'bg-red-950/20 border-red-500/30 text-red-400' 
+              : 'bg-gold-glass border-gold-light/20 text-gold-light'
+          }`}>
             {message}
           </div>
         )}
@@ -69,7 +101,7 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/50 hover:bg-blue-700 transition duration-150 disabled:opacity-50 text-lg"
+          className="w-full py-3.5 rounded-xl bg-luxury-gold-button font-serif tracking-widest text-sm uppercase transition-all duration-300 disabled:opacity-50"
         >
           {loading ? 'Processing...' : isLogin ? 'Log In' : 'Register'}
         </button>
@@ -77,10 +109,10 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
 
       {/* Forgot Password Link - Only show on login */}
       {isLogin && (
-        <div className="mt-4 text-center">
+        <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/forgot-password')}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition duration-150"
+            className="text-xs text-gold-light/80 hover:text-gold-light hover:underline transition duration-150 tracking-wider uppercase font-semibold"
             disabled={loading}
           >
             Forgot your password?
@@ -91,7 +123,7 @@ const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
       {/* Switch Link */}
       <button
         onClick={() => setIsLogin(!isLogin)}
-        className="mt-6 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition duration-150"
+        className="mt-6 text-xs text-sand-light hover:text-gold-light transition duration-150 tracking-wider uppercase font-semibold border-t border-gold-light/10 pt-4 w-full"
         disabled={loading}
       >
         {isLogin ? "Don't have an account? Register Now" : "Already have an account? Log In"}

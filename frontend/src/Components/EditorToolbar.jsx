@@ -9,15 +9,15 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
   if (!editor) return null;
 
   const btnClasses = (isActive) => `
-    p-2 rounded-lg transition-colors duration-150 focus:outline-none
+    p-2 rounded-lg transition-all duration-150 focus:outline-none border border-transparent
     ${isActive 
-      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+      ? 'bg-gold-glass text-gold-light border-gold-light/20' 
+      : 'text-sand-light hover:text-gold-light hover:bg-gold-glass/5'
     }
   `;
 
   return (
-    <div className="flex flex-wrap items-center justify-between p-2 gap-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 rounded-t-xl">
+    <div className="flex flex-wrap items-center justify-between p-3 gap-3 border-b border-gold-light/10 bg-cocoa-glass backdrop-blur-md rounded-t-xl">
       {/* Text formatting group */}
       <div className="flex flex-wrap items-center gap-1">
         <button
@@ -26,7 +26,7 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Bold"
           type="button"
         >
-          <Bold size={18} />
+          <Bold size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -34,7 +34,7 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Italic"
           type="button"
         >
-          <Italic size={18} />
+          <Italic size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -42,11 +42,10 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Strikethrough"
           type="button"
         >
-          {/* Lucide Strike is usually represented as Strikethrough or Slash or we can render text */}
-          <span className="font-sans line-through font-semibold text-sm px-0.5">S</span>
+          <span className="font-sans line-through font-bold text-xs px-0.5">S</span>
         </button>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+        <div className="h-5 w-px bg-gold-light/10 mx-1.5" />
 
         {/* Headings */}
         <button
@@ -55,7 +54,7 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Heading 1"
           type="button"
         >
-          <Heading1 size={18} />
+          <Heading1 size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -63,10 +62,10 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Heading 2"
           type="button"
         >
-          <Heading2 size={18} />
+          <Heading2 size={16} />
         </button>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+        <div className="h-5 w-px bg-gold-light/10 mx-1.5" />
 
         {/* Lists */}
         <button
@@ -75,7 +74,7 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Bullet List"
           type="button"
         >
-          <List size={18} />
+          <List size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -83,10 +82,10 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Numbered List"
           type="button"
         >
-          <ListOrdered size={18} />
+          <ListOrdered size={16} />
         </button>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+        <div className="h-5 w-px bg-gold-light/10 mx-1.5" />
 
         {/* Code & Quote */}
         <button
@@ -95,7 +94,7 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Code Block"
           type="button"
         >
-          <Code size={18} />
+          <Code size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
@@ -103,41 +102,41 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
           title="Quote"
           type="button"
         >
-          <Quote size={18} />
+          <Quote size={16} />
         </button>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+        <div className="h-5 w-px bg-gold-light/10 mx-1.5" />
 
         {/* History */}
         <button
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
-          className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="p-2 rounded-lg text-sand-light hover:text-gold-light hover:bg-gold-glass/5 disabled:opacity-25 transition"
           title="Undo"
           type="button"
         >
-          <Undo size={18} />
+          <Undo size={16} />
         </button>
         <button
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
-          className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="p-2 rounded-lg text-sand-light hover:text-gold-light hover:bg-gold-glass/5 disabled:opacity-25 transition"
           title="Redo"
           type="button"
         >
-          <Redo size={18} />
+          <Redo size={16} />
         </button>
       </div>
 
       {/* Save and Share Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {onShare && (
           <button
             onClick={onShare}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition duration-150"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gold-light/20 text-xs font-serif uppercase tracking-widest text-gold-light hover:bg-gold-glass/10 transition-all duration-300 shadow-sm"
             type="button"
           >
-            <Share2 size={16} />
+            <Share2 size={12} />
             <span>Share</span>
           </button>
         )}
@@ -145,10 +144,10 @@ const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
         <button
           onClick={onSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold shadow-md shadow-blue-500/30 transition duration-150"
+          className="flex items-center gap-2 px-4.5 py-2 rounded-xl bg-luxury-gold-button font-serif tracking-widest text-xs uppercase transition-all duration-300 disabled:opacity-50"
           type="button"
         >
-          <Save size={16} className={isSaving ? 'animate-pulse' : ''} />
+          <Save size={12} className={isSaving ? 'animate-pulse' : ''} />
           <span>{isSaving ? 'Saving...' : 'Save'}</span>
         </button>
       </div>

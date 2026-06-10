@@ -189,21 +189,17 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
     return userName.substring(0, 2).toUpperCase();
   };
 
-  const cardBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const headingColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
-  const inputBg = theme === 'dark' ? 'bg-gray-700 text-gray-100 border-gray-600' : 'bg-gray-50 text-gray-800 border-gray-300';
-
   return (
-    <div className={`w-80 md:w-96 flex flex-col h-full border-l ${cardBg} shadow-2xl transition-all duration-300`}>
+    <div className={`w-80 md:w-96 flex flex-col h-full border-l glass-panel shadow-3xl transition-all duration-300 rounded-r-2xl`}>
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+      <div className="flex items-center justify-between p-4 border-b border-gold-light/10">
+        <div className="flex items-center space-x-2 text-gold-light">
           <MessageSquare size={18} />
-          <h2 className={`font-bold text-sm uppercase tracking-wider ${headingColor}`}>Comments</h2>
+          <h2 className="font-serif font-bold text-sm uppercase tracking-wider text-luxury-gradient">Comments</h2>
         </div>
         <button 
           onClick={onClose}
-          className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+          className="p-1.5 rounded-full hover:bg-gold-glass/5 text-sand-light hover:text-gold-light transition-all"
         >
           <X size={16} />
         </button>
@@ -212,27 +208,27 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
       {/* Main Comment Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {error ? (
-          <p className="text-red-500 text-center text-xs py-10">{error}</p>
+          <p className="text-red-400 text-center text-xs py-10 font-semibold">{error}</p>
         ) : loading && comments.length === 0 ? (
-          <p className="text-gray-500 text-center text-xs py-10">Loading comments...</p>
+          <p className="text-sand-light/60 text-center text-xs py-10 font-semibold animate-pulse">Loading comments...</p>
         ) : comments.length === 0 ? (
-          <p className="text-gray-500 text-center text-xs py-10">No active comments on this document.</p>
+          <p className="text-sand-light/50 text-center text-xs py-10 tracking-wider">No active comments on this document.</p>
         ) : (
           comments.map((thread) => {
             const isActive = activeCommentId === thread.commentAnchorId;
+            const threadStyle = isActive 
+              ? (theme === 'dark' ? 'border-gold-light bg-gold-glass/10 ring-1 ring-gold-light/25 shadow-lg shadow-gold-light/5' : 'border-gold-medium bg-gold-glass/20 ring-1 ring-gold-medium/20 shadow-md shadow-gold-medium/5')
+              : (theme === 'dark' ? 'border-gold-light/10 bg-cocoa-medium/25 hover:border-gold-light/20' : 'border-gold-medium/10 bg-cream-dark/45 hover:border-gold-medium/25');
+
             return (
               <div 
                 key={thread.id} 
-                className={`p-3.5 rounded-xl border transition-all duration-200 ${
-                  isActive 
-                    ? 'border-yellow-500 bg-yellow-50/30 dark:bg-yellow-500/5 ring-1 ring-yellow-400 shadow-md' 
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
+                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer ${threadStyle}`}
                 onClick={() => setActiveCommentId(thread.commentAnchorId)}
               >
                 {/* Text selection snippet */}
                 {thread.selectionText && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 border-l-2 border-yellow-500 pl-2 py-0.5 italic mb-2 truncate">
+                  <div className="text-xs text-sand-light/80 border-l-2 border-gold-light pl-2 py-0.5 italic mb-2.5 truncate">
                     "{thread.selectionText}"
                   </div>
                 )}
@@ -240,14 +236,14 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
                 {/* Root Comment Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                    <div className="w-6 h-6 rounded-full bg-luxury-gold-button text-cocoa-darkest flex items-center justify-center text-[10px] font-bold shadow-sm">
                       {getInitials(thread.user?.userName)}
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[120px]">
+                      <p className="text-xs font-semibold text-sand-light dark:text-f5f0eb truncate max-w-[120px]">
                         {thread.user?.userName?.split('@')[0] || 'User'}
                       </p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                      <p className="text-[9px] text-sand-light/50 font-medium">
                         {new Date(thread.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -256,16 +252,22 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
                   {/* Actions (Resolve / Delete) */}
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={() => handleResolve(thread.id, thread.commentAnchorId)}
-                      className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 rounded transition"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleResolve(thread.id, thread.commentAnchorId);
+                      }}
+                      className="p-1 text-sand-light hover:text-green-500 hover:bg-green-950/20 rounded transition"
                       title="Resolve Thread"
                     >
                       <Check size={14} />
                     </button>
                     {(thread.userId === currentUserId) && (
                       <button
-                        onClick={() => handleDelete(thread.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(thread.id);
+                        }}
+                        className="p-1 text-sand-light hover:text-red-500 hover:bg-red-950/20 rounded transition"
                         title="Delete Comment"
                       >
                         <Trash2 size={14} />
@@ -275,35 +277,38 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
                 </div>
 
                 {/* Comment Text */}
-                <p className="text-xs text-gray-700 dark:text-gray-300 mt-2 whitespace-pre-wrap">
+                <p className="text-xs text-sand-light dark:text-f5f0eb mt-2.5 whitespace-pre-wrap leading-relaxed">
                   {thread.content}
                 </p>
 
                 {/* Threaded Replies */}
                 {thread.replies && thread.replies.length > 0 && (
-                  <div className="mt-3 space-y-2.5 pl-3 border-l border-gray-100 dark:border-gray-800">
+                  <div className="mt-3.5 space-y-2.5 pl-3 border-l border-gold-light/10">
                     {thread.replies.map((reply) => (
                       <div key={reply.id} className="text-xs">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-1.5">
-                            <CornerDownRight size={10} className="text-gray-400" />
-                            <div className="w-5 h-5 rounded-full bg-gray-500 text-white flex items-center justify-center text-[8px] font-bold">
+                            <CornerDownRight size={10} className="text-sand-light/40" />
+                            <div className="w-5 h-5 rounded-full bg-gold-glass border border-gold-light/25 text-gold-light flex items-center justify-center text-[8px] font-bold">
                               {getInitials(reply.user?.userName)}
                             </div>
-                            <span className="font-semibold text-gray-800 dark:text-gray-300 text-[10px]">
+                            <span className="font-semibold text-sand-light text-[10px]">
                               {reply.user?.userName?.split('@')[0] || 'User'}
                             </span>
                           </div>
                           {reply.userId === currentUserId && (
                             <button
-                              onClick={() => handleDelete(reply.id)}
-                              className="text-gray-400 hover:text-red-500 p-0.5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(reply.id);
+                              }}
+                              className="text-sand-light hover:text-red-500 p-0.5"
                             >
                               <Trash2 size={10} />
                             </button>
                           )}
                         </div>
-                        <p className="text-[11px] text-gray-600 dark:text-gray-400 pl-6 mt-0.5 whitespace-pre-wrap">
+                        <p className="text-[11px] text-sand-light/80 pl-6 mt-1 whitespace-pre-wrap leading-relaxed">
                           {reply.content}
                         </p>
                       </div>
@@ -312,20 +317,20 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
                 )}
 
                 {/* Reply Form */}
-                <div className="flex items-center space-x-2 mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800/80">
+                <div className="flex items-center space-x-2 mt-3.5 pt-2.5 border-t border-gold-light/10" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="text"
                     placeholder="Reply..."
                     value={replyTexts[thread.id] || ''}
                     onChange={(e) => setReplyTexts(prev => ({ ...prev, [thread.id]: e.target.value }))}
-                    className={`flex-1 p-1.5 text-xs rounded border focus:outline-none focus:ring-1 focus:ring-blue-500 ${inputBg}`}
+                    className="flex-1 p-2 text-xs rounded-xl glass-input placeholder-sand-light/40"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAddReply(thread.id);
                     }}
                   />
                   <button
                     onClick={() => handleAddReply(thread.id)}
-                    className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    className="p-2 bg-luxury-gold-button text-cocoa-darkest rounded-xl hover:scale-105 active:scale-95 transition-all duration-200"
                   >
                     <Send size={10} />
                   </button>
@@ -337,11 +342,11 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
       </div>
 
       {/* Add New Comment Box (Anchored at the bottom) */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+      <div className="p-4 border-t border-gold-light/10 bg-cocoa-medium/20 rounded-b-2xl">
         {selectionRange ? (
-          <form onSubmit={handleAddThread} className="space-y-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate font-medium">
-              Comment on: <span className="italic">"{selectionText}"</span>
+          <form onSubmit={handleAddThread} className="space-y-2.5">
+            <div className="text-xs text-sand-light/70 truncate font-semibold">
+              Comment on: <span className="italic font-bold">"{selectionText}"</span>
             </div>
             <textarea
               placeholder="Write a comment..."
@@ -349,18 +354,18 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
               onChange={(e) => setNewCommentText(e.target.value)}
               required
               rows={2}
-              className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${inputBg}`}
+              className="w-full p-2.5 text-xs rounded-xl glass-input resize-none placeholder-sand-light/45"
             />
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-500/20 transition"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-luxury-gold-button text-cocoa-darkest rounded-xl text-xs font-serif tracking-widest uppercase shadow-md transition-all"
             >
               <MessageSquare size={12} />
               <span>Add Comment</span>
             </button>
           </form>
         ) : (
-          <div className="text-center text-xs text-gray-400 py-2">
+          <div className="text-center text-xs text-sand-light/50 py-2.5 tracking-wider font-semibold">
             Highlight text in the editor to insert a comment.
           </div>
         )}

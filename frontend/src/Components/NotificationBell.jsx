@@ -103,20 +103,17 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const dropdownBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const headingColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
-
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition duration-150 focus:outline-none"
+        className="relative p-2.5 rounded-xl text-sand-light hover:text-gold-light hover:bg-gold-glass/5 transition-all duration-300 focus:outline-none"
         aria-label="Notifications"
       >
-        <Bell size={20} />
+        <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-bold leading-none text-white bg-red-500 transform translate-x-1/4 -translate-y-1/4">
+          <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold leading-none text-cocoa-darkest bg-luxury-gold-button transform translate-x-1/4 -translate-y-1/4">
             {unreadCount}
           </span>
         )}
@@ -124,14 +121,14 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
 
       {/* Notifications Dropdown Panel */}
       {isOpen && (
-        <div className={`absolute right-0 mt-2.5 w-80 rounded-xl border shadow-2xl ${dropdownBg} overflow-hidden z-50`}>
+        <div className="absolute right-0 mt-3.5 w-84 rounded-2xl border glass-panel shadow-3xl overflow-hidden z-50 animate-fade-in">
           {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-            <h3 className={`font-bold text-xs uppercase tracking-wider ${headingColor}`}>Notifications</h3>
+          <div className="flex items-center justify-between p-3.5 border-b border-gold-light/10 bg-cocoa-medium/20">
+            <h3 className="font-serif font-bold text-xs uppercase tracking-wider text-luxury-gradient">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 focus:outline-none"
+                className="text-[10px] text-gold-light font-bold hover:underline flex items-center gap-1 focus:outline-none"
               >
                 <MailOpen size={10} />
                 <span>Mark all read</span>
@@ -140,49 +137,49 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
           </div>
 
           {/* List */}
-          <div className="max-h-72 overflow-y-auto divide-y divide-gray-150 dark:divide-gray-700/60">
+          <div className="max-h-72 overflow-y-auto divide-y divide-gold-light/5">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-xs">
+              <div className="p-8 text-center text-sand-light/50 text-xs tracking-wider">
                 No notifications yet.
               </div>
             ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleNotificationClick(n)}
-                  className={`p-3 text-left transition duration-150 cursor-pointer flex gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/30
-                    ${!n.isRead ? 'bg-blue-50/25 dark:bg-blue-500/5' : ''}
-                  `}
-                >
-                  {/* Alert Icon */}
-                  <div className={`p-1.5 rounded-lg h-fit text-blue-600 dark:text-blue-400
-                    ${n.type === 'DocumentShared' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-purple-50 dark:bg-purple-900/20'}
-                  `}>
-                    <AlertCircle size={14} />
-                  </div>
+              notifications.map((n) => {
+                const itemHover = theme === 'dark' ? 'hover:bg-gold-glass/10' : 'hover:bg-gold-glass/15';
+                const itemUnread = !n.isRead ? (theme === 'dark' ? 'bg-gold-glass/5' : 'bg-gold-glass/10') : '';
+                return (
+                  <div
+                    key={n.id}
+                    onClick={() => handleNotificationClick(n)}
+                    className={`p-3.5 text-left transition duration-150 cursor-pointer flex gap-3 ${itemHover} ${itemUnread}`}
+                  >
+                    {/* Alert Icon */}
+                    <div className="p-2 rounded-xl h-fit border border-gold-light/10 text-gold-light bg-gold-glass">
+                      <AlertCircle size={14} />
+                    </div>
 
-                  {/* Body details */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${!n.isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {n.message}
-                    </p>
-                    <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 block">
-                      {new Date(n.createdAt).toLocaleTimeString()}
-                    </span>
-                  </div>
+                    {/* Body details */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs leading-relaxed ${!n.isRead ? 'font-bold text-sand-light dark:text-f5f0eb' : 'text-sand-light/70'}`}>
+                        {n.message}
+                      </p>
+                      <span className="text-[9px] text-sand-light/40 mt-1 block font-medium">
+                        {new Date(n.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
 
-                  {/* Actions (Mark single read) */}
-                  {!n.isRead && (
-                    <button
-                      onClick={(e) => handleMarkAsRead(n.id, e)}
-                      className="p-1 text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded self-center"
-                      title="Mark read"
-                    >
-                      <Check size={12} />
-                    </button>
-                  )}
-                </div>
-              ))
+                    {/* Actions (Mark single read) */}
+                    {!n.isRead && (
+                      <button
+                        onClick={(e) => handleMarkAsRead(n.id, e)}
+                        className="p-1.5 text-sand-light hover:text-gold-light hover:bg-gold-glass/5 rounded-lg self-center transition-all"
+                        title="Mark read"
+                      >
+                        <Check size={12} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -190,19 +187,19 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
 
       {/* Floating Real-time Toast Banner (slide-in) */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-sm p-4 rounded-xl border shadow-2xl bg-white dark:bg-gray-800 border-blue-500 dark:border-blue-700 flex items-start gap-3 animate-slide-in">
-          <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+        <div className="fixed bottom-5 right-5 z-50 max-w-sm p-4.5 rounded-2xl glass-panel border border-gold-light/25 shadow-3xl flex items-start gap-3.5 animate-fade-in">
+          <div className="p-2.5 rounded-xl bg-gold-glass text-gold-light border border-gold-light/10">
             <Bell size={18} className="animate-bounce" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">New Notification</h4>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{toast.message}</p>
+            <h4 className="text-xs font-serif font-bold text-luxury-gradient uppercase tracking-widest">New Notification</h4>
+            <p className="text-xs text-sand-light dark:text-f5f0eb mt-1 leading-relaxed">{toast.message}</p>
             <button
               onClick={() => {
                 setToast(null);
                 handleNotificationClick(toast);
               }}
-              className="mt-2 text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline"
+              className="mt-2 text-[10px] text-gold-light font-bold flex items-center gap-1.5 hover:underline"
             >
               <Eye size={10} />
               <span>View Document</span>
@@ -210,7 +207,7 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
           </div>
           <button 
             onClick={() => setToast(null)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="p-1 rounded-full hover:bg-gold-glass/5 text-sand-light hover:text-gold-light transition-all"
           >
             <X size={14} />
           </button>

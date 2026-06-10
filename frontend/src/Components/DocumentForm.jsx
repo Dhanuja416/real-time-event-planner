@@ -14,7 +14,7 @@ const createApiClient = (token) => {
   });
 };
 
-const DocumentForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
+const DocumentForm = ({ onDocumentCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,38 +48,58 @@ const DocumentForm = ({ onDocumentCreated, theme }) => { // 🎯 Receives theme
     }
   };
 
-  const inputClasses = "w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150";
-  const headerColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
+  const inputClasses = "w-full p-3.5 rounded-xl glass-input placeholder-sand-light/40 text-sm tracking-wide";
+  const labelClasses = "block text-xs uppercase tracking-widest font-semibold text-gold-light/85 mb-1.5 ml-1";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className={`text-xl font-semibold ${headerColor}`}>Create New Document</h3>
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      <div className="border-b border-gold-light/10 pb-3">
+        <h3 className="text-xl font-serif font-bold text-luxury-gradient">Create Collaborative Canvas</h3>
+        <p className="text-[10px] text-sand-light/60 uppercase tracking-widest mt-1">Initiate a new document workspace</p>
+      </div>
       
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && (
+        <div className="p-4 rounded-xl text-xs font-semibold tracking-wide border leading-relaxed bg-red-950/20 border-red-500/30 text-red-400">
+          {error}
+        </div>
+      )}
       
-      <div className="flex space-x-3">
-        <input
-          type="text"
-          placeholder="Document Title (required)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          disabled={loading}
-          className={inputClasses}
-        />
-        <textarea
-          placeholder="Content (optional - rich editor coming soon)"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          disabled={loading}
-          className={`${inputClasses} flex-1 resize-none h-auto`}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+        <div className="md:col-span-5">
+          <label className={labelClasses}>Document Title</label>
+          <input
+            type="text"
+            placeholder="e.g. Q3 Strategic Project Blueprint"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            disabled={loading}
+            className={inputClasses}
+          />
+        </div>
         
-        <button type="submit" disabled={!title || loading}
-          className="flex items-center justify-center py-3 px-6 rounded-lg bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/50 hover:bg-blue-700 transition duration-150 disabled:opacity-50 whitespace-nowrap"
-        >
-          {loading ? 'Adding...' : <Plus size={20} />}
-        </button>
+        <div className="md:col-span-5">
+          <label className={labelClasses}>Initial Content</label>
+          <input
+            type="text"
+            placeholder="Brief introduction or outline notes..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            disabled={loading}
+            className={inputClasses}
+          />
+        </div>
+        
+        <div className="md:col-span-2">
+          <button 
+            type="submit" 
+            disabled={!title || loading}
+            className="w-full h-[47px] flex items-center justify-center gap-2 rounded-xl bg-luxury-gold-button font-serif tracking-widest text-xs uppercase transition-all duration-300 disabled:opacity-50"
+          >
+            <span>{loading ? 'Adding...' : 'Create'}</span>
+            {!loading && <Plus size={14} />}
+          </button>
+        </div>
       </div>
     </form>
   );

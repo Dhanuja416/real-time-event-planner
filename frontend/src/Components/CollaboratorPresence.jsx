@@ -44,15 +44,15 @@ const CollaboratorPresence = ({ awareness }) => {
   };
 
   return (
-    <div className="flex items-center space-x-1.5">
-      <span className="text-xs text-gray-500 dark:text-gray-400 mr-1 hidden sm:inline">
-        {users.length} editing:
+    <div className="flex items-center space-x-2.5">
+      <span className="text-[10px] uppercase tracking-widest text-sand-light/60 font-bold hidden sm:inline">
+        {users.length} Active:
       </span>
-      <div className="flex -space-x-2 overflow-hidden">
+      <div className="flex -space-x-2.5 overflow-hidden">
         {users.map((user) => (
           <div
             key={user.clientId}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-white dark:border-gray-900 text-xs font-bold text-white shadow-sm cursor-help transition-all duration-300 hover:scale-110"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gold-light/30 text-[10px] font-bold text-white shadow-md cursor-help transition-all duration-300 hover:scale-110"
             style={{ backgroundColor: user.color }}
             title={`${user.name} (${user.email || 'online'})`}
           >
