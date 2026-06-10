@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:7072/api/Auth';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_BASE_URL = `${API_BASE}/api/Auth`;
 
 const AuthForm = ({ onAuthSuccess, theme }) => { // 🎯 Receives theme
   const navigate = useNavigate();

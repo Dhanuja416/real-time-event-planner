@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
-const API_BASE_URL = 'https://localhost:7072/api/Auth';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_BASE_URL = `${API_BASE}/api/Auth`;
 
 const VerifyEmail = ({ theme }) => {
   const [searchParams] = useSearchParams();
