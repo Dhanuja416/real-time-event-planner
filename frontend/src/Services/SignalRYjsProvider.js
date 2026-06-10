@@ -83,10 +83,18 @@ export class SignalRYjsProvider extends Observable {
         try {
           const { clientId, state } = JSON.parse(awarenessJson);
           if (clientId !== this.ydoc.clientID) {
+            const timestamp = Math.floor(Date.now() / 1000);
             if (state === null) {
               this.awareness.states.delete(clientId);
+              this.awareness.meta.delete(clientId);
             } else {
               this.awareness.states.set(clientId, state);
+              const clientMeta = this.awareness.meta.get(clientId);
+              const clock = clientMeta === undefined ? 0 : clientMeta.clock + 1;
+              this.awareness.meta.set(clientId, {
+                clock,
+                lastUpdated: timestamp
+              });
             }
             this.awareness.emit('change', [{ added: [], updated: [clientId], removed: [] }]);
           }
