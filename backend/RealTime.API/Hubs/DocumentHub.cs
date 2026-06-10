@@ -73,7 +73,7 @@ namespace RealTime.API.Hubs
             await Clients.OthersInGroup(groupName).SendAsync("ReceiveUpdate", update);
         }
 
-        public async Task SendAwareness(int documentId, byte[] awarenessState)
+        public async Task SendAwareness(int documentId, string awarenessState)
         {
             var groupName = $"Document_{documentId}";
             // Broadcast client presence/cursor info to others in the group
