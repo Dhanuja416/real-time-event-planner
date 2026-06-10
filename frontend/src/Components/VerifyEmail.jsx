@@ -6,11 +6,11 @@ import { CheckCircle, XCircle, Loader } from 'lucide-react';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
 const API_BASE_URL = `${API_BASE}/api/Auth`;
 
-const VerifyEmail = ({ theme }) => {
+const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // 'verifying' | 'success' | 'error'
-  const [message, setMessage] = useState('Verifying your email...');
+  const [message, setMessage] = useState('Verifying your credentials...');
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -19,7 +19,7 @@ const VerifyEmail = ({ theme }) => {
 
       if (!token || !email) {
         setStatus('error');
-        setMessage('Invalid verification link. Please check your email and try again.');
+        setMessage('Invalid verification link. Please request a new verification email.');
         return;
       }
 
@@ -30,9 +30,8 @@ const VerifyEmail = ({ theme }) => {
         });
 
         setStatus('success');
-        setMessage(response.data.message || 'Email verified successfully! You can now log in.');
+        setMessage(response.data.message || 'Email verified successfully! Opening your secure workspace...');
         
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/');
         }, 3000);
@@ -43,7 +42,7 @@ const VerifyEmail = ({ theme }) => {
         setMessage(
           error.response?.data?.message || 
           error.response?.data?.Message ||
-          'Email verification failed. The link may be expired or invalid.'
+          'Verification token is invalid or has expired.'
         );
       }
     };
@@ -51,59 +50,65 @@ const VerifyEmail = ({ theme }) => {
     verifyEmail();
   }, [searchParams, navigate]);
 
-  const containerClasses = theme === 'dark' 
-    ? 'bg-gray-800 text-gray-100' 
-    : 'bg-white text-gray-800';
-
   return (
-    <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
-      <div className={`max-w-md w-full p-8 rounded-xl shadow-2xl ${containerClasses}`}>
-        <div className="text-center">
-          {/* Icon */}
-          <div className="flex justify-center mb-6">
-            {status === 'verifying' && (
-              <Loader className="w-16 h-16 text-blue-500 animate-spin" />
-            )}
-            {status === 'success' && (
-              <CheckCircle className="w-16 h-16 text-green-500" />
-            )}
-            {status === 'error' && (
-              <XCircle className="w-16 h-16 text-red-500" />
-            )}
-          </div>
+    <div className="min-h-screen flex items-center justify-center relative p-4">
+      <div className="bg-drift"></div>
+      
+      <div className="max-w-md w-full glass-panel p-8 md:p-12 rounded-2xl shadow-3xl text-center animate-fade-in">
+        <span className="text-[10px] uppercase tracking-widest text-gold-light/70 font-semibold block mb-4">
+          REAP Secure Verification
+        </span>
 
-          {/* Title */}
-          <h2 className="text-3xl font-bold mb-4">
-            {status === 'verifying' && 'Verifying Email'}
-            {status === 'success' && 'Email Verified!'}
-            {status === 'error' && 'Verification Failed'}
-          </h2>
-
-          {/* Message */}
-          <p className={`text-lg mb-6 ${
-            status === 'success' ? 'text-green-600 dark:text-green-400' :
-            status === 'error' ? 'text-red-600 dark:text-red-400' :
-            'text-gray-600 dark:text-gray-400'
-          }`}>
-            {message}
-          </p>
-
-          {/* Action Buttons */}
-          {status === 'success' && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Redirecting to login page...
-            </p>
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          {status === 'verifying' && (
+            <div className="p-4 rounded-full bg-gold-glass border border-gold-light/25 animate-pulse">
+              <Loader className="w-10 h-10 text-gold-light animate-spin" />
+            </div>
           )}
-
+          {status === 'success' && (
+            <div className="p-4 rounded-full bg-gold-glass border border-gold-light/40">
+              <CheckCircle className="w-10 h-10 text-gold-light" />
+            </div>
+          )}
           {status === 'error' && (
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-150"
-            >
-              Back to Login
-            </button>
+            <div className="p-4 rounded-full bg-red-950/20 border border-red-500/30">
+              <XCircle className="w-10 h-10 text-red-400" />
+            </div>
           )}
         </div>
+
+        {/* Title */}
+        <h2 className="text-3xl font-serif font-bold text-luxury-gradient mb-3">
+          {status === 'verifying' && 'Verifying Email'}
+          {status === 'success' && 'Verification Complete'}
+          {status === 'error' && 'Verification Failed'}
+        </h2>
+
+        {/* Message */}
+        <p className={`text-sm mb-8 leading-relaxed font-medium ${
+          status === 'success' ? 'text-gold-light/90' :
+          status === 'error' ? 'text-red-400/95' :
+          'text-sand-light/85'
+        }`}>
+          {message}
+        </p>
+
+        {/* Action Buttons */}
+        {status === 'success' && (
+          <p className="text-xs text-sand-light/60 tracking-wider uppercase font-semibold animate-pulse">
+            Redirecting to dashboard...
+          </p>
+        )}
+
+        {status === 'error' && (
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-3.5 rounded-xl bg-luxury-gold-button font-serif tracking-widest text-sm uppercase transition-all duration-300"
+          >
+            Back to Login
+          </button>
+        )}
       </div>
     </div>
   );
