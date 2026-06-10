@@ -4,9 +4,10 @@ import * as signalR from '@microsoft/signalr';
 import TaskForm from './TaskForm';
 import { Trash2 } from 'lucide-react'; // Icon for delete
 
-// Base URLs
-const API_URL = 'https://localhost:7072/api/Documents';
-const HUB_URL = 'https://localhost:7072/taskhub';
+// Base URLs from environment
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_URL = `${API_BASE}/api/Documents`;
+const HUB_URL = `${API_BASE}/taskhub`;
 
 // Create an Axios instance that includes the token for every request
 const createApiClient = (token) => {

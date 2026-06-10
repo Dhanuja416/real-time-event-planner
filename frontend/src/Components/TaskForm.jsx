@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
 
-const API_URL = 'https://localhost:7072/api/Documents';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_URL = `${API_BASE}/api/Documents`;
 
 const createApiClient = (token) => {
   return axios.create({

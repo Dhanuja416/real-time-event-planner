@@ -1,11 +1,33 @@
+# ============================================================
+# REAP — Git Ignore Configuration
+# ============================================================
 
-# Visual Studio
+# --- .NET Backend ---
 backend/.vs/
 backend/**/bin/
 backend/**/obj/
 *.user
 *.suo
 *.cache
-*.dll
-*.exe
-*.pdb
+
+# --- Node / Frontend ---
+frontend/node_modules/
+frontend/dist/
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.production
+.env.staging
+backend/RealTime.API/appsettings.*.local.json
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.idea/
+*.swp
+*.swo
+*~

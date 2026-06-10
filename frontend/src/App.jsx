@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import TaskList from './components/TaskList';
-import AuthForm from './components/AuthForm';
-import VerifyEmail from './components/VerifyEmail';
-import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
+import TaskList from './Components/TaskList';
+import AuthForm from './Components/AuthForm';
+import VerifyEmail from './Components/VerifyEmail';
+import ForgotPassword from './Components/ForgotPassword';
+import ResetPassword from './Components/ResetPassword';
 import './App.css'; 
 import { Sun, Moon, LogOut } from 'lucide-react'; // Using lucide-react for icons
 

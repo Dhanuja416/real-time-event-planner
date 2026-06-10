@@ -3,32 +3,30 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RealTime.API.Data;
-using RealTime.API.Hubs; // Required for TaskHub
-using RealTime.API.Services; // Required for Email Service
-using Microsoft.AspNetCore.Identity; // NEW
-using Microsoft.AspNetCore.Authentication.JwtBearer; // NEW
-using Microsoft.IdentityModel.Tokens; // NEW
-using System.Text; // NEW
+using RealTime.API.Hubs;
+using RealTime.API.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. SERVICES CONFIGURATION (builder.Services.Add...) ---
+// --- 1. SERVICES CONFIGURATION ---
 
-// Define the CORS policy name
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+// CORS: Read allowed origins from configuration
+var corsOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "https://localhost:5173" };
 
-// Register CORS service
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          // Allow React's dev server origin
-                          policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
-                                .AllowAnyHeader()
-                                .AllowAnyMethod()
-                                .AllowCredentials(); // Essential for SignalR and future Auth
-                      });
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(corsOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Required for SignalR
+    });
 });
 
 // Database Configuration
@@ -38,33 +36,29 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// 1. Identity Service: Adds user management capabilities with security settings
+// Identity Service: User management with security settings
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-    // Sign-in settings
     options.SignIn.RequireConfirmedEmail = true;
-    
-    // Password requirements
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 6;
-    
-    // User settings
     options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// 2. JSON Serialization Fix: Required for Identity tables (to prevent cycle errors)
+// Controllers + JSON serialization fix for Identity navigation properties
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
         options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
     );
 
-// 3. JWT Authentication Service: Defines the token validation scheme
-var jwtKey = builder.Configuration["JwtSettings:Key"];
+// JWT Authentication with SignalR query string support
+var jwtKey = builder.Configuration["JwtSettings:Key"]
+    ?? throw new InvalidOperationException("JwtSettings:Key is not configured.");
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
 var jwtAudience = builder.Configuration["JwtSettings:Audience"];
 
@@ -85,24 +79,72 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+
+    // CRITICAL: Extract JWT from query string for SignalR WebSocket connections
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/taskhub") || path.StartsWithSegments("/documenthub")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
-// SignalR Service Registration
-builder.Services.AddSignalR(); // <-- SignalR Service added here!
+// SignalR with increased message size for document collaboration
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 512 * 1024; // 512 KB for Y.js binary updates
+});
 
-// Email Service Registration
+// Email Service
 builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 
-// API Services
-builder.Services.AddControllers();
+// Swagger with JWT Bearer support
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter your JWT token. Example: \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "postgresql");
 
 var app = builder.Build();
 
-// --- 2. PIPELINE CONFIGURATION (app.Use... / app.Map...) ---
+// --- 2. PIPELINE CONFIGURATION ---
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -111,22 +153,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 1. CORS Middleware (Must be before MapControllers)
-app.UseCors(MyAllowSpecificOrigins);
+// CORS (must be before auth middleware)
+app.UseCors("AllowFrontend");
 
-// 2. Routing Middleware (Must be before Endpoints)
-app.UseRouting(); // This enables routing features like MapHub
+app.UseRouting();
 
-// IMPORTANT: Authentication must come BEFORE Authorization
+// Authentication then Authorization (order matters)
 app.UseAuthentication();
-
 app.UseAuthorization();
 
-// 3. SignalR Endpoint Mapping (The FIX!)
-// This is where the /taskhub route is registered, resolving the 404 error.
+// SignalR Hub Endpoints
 app.MapHub<TaskHub>("/taskhub");
 
-// 4. Controller Endpoint Mapping
+// Controller Endpoints
 app.MapControllers();
+
+// Health Check Endpoint
+app.MapHealthChecks("/health");
 
 app.Run();

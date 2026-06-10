@@ -19,12 +19,18 @@ namespace RealTime.API.Controllers
         private readonly AppDbContext _context;
         private readonly IHubContext<TaskHub> _hubContext;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ILogger<DocumentsController> _logger;
 
-        public DocumentsController(AppDbContext context, IHubContext<TaskHub> hubContext, UserManager<IdentityUser> userManager)
+        public DocumentsController(
+            AppDbContext context,
+            IHubContext<TaskHub> hubContext,
+            UserManager<IdentityUser> userManager,
+            ILogger<DocumentsController> logger)
         {
             _context = context;
             _hubContext = hubContext;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: api/Documents
@@ -86,11 +92,13 @@ namespace RealTime.API.Controllers
             _context.Documents.Add(document);
             await _context.SaveChangesAsync();
 
-            // Reload with navigation properties for SignalR broadcast
+            // Reload with navigation properties
             await _context.Entry(document).Reference(d => d.Owner).LoadAsync();
 
-            // Broadcast the "created" event to all connected clients
-            await _hubContext.Clients.All.SendAsync("DocumentReceived", document, "created");
+            _logger.LogInformation("Document {DocumentId} created by user {UserId}", document.Id, userId);
+
+            // Broadcast only to the document owner (no collaborators yet on a new doc)
+            await _hubContext.Clients.User(userId).SendAsync("DocumentReceived", document, "created");
 
             return CreatedAtAction(nameof(GetDocument), new { id = document.Id }, document);
         }
@@ -120,7 +128,7 @@ namespace RealTime.API.Controllers
 
             if (!isOwner && !hasEditorPermission)
             {
-                return Forbid(); // User only has Viewer permission or no permission
+                return Forbid();
             }
 
             // Update document
@@ -132,11 +140,20 @@ namespace RealTime.API.Controllers
             {
                 await _context.SaveChangesAsync();
 
-                // Reload with navigation properties for SignalR broadcast
+                // Reload with navigation properties for broadcast
                 await _context.Entry(document).Reference(d => d.Owner).LoadAsync();
+                await _context.Entry(document).Collection(d => d.Permissions).LoadAsync();
 
-                // Broadcast the "updated" event
-                await _hubContext.Clients.All.SendAsync("DocumentReceived", document, "updated");
+                _logger.LogInformation("Document {DocumentId} updated by user {UserId}", document.Id, userId);
+
+                // Broadcast only to users who have access (owner + permitted users)
+                var allowedUserIds = document.Permissions
+                    .Select(p => p.UserId)
+                    .Append(document.OwnerId)
+                    .Distinct()
+                    .ToList();
+
+                await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -160,7 +177,10 @@ namespace RealTime.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Unauthorized();
 
-            var document = await _context.Documents.FindAsync(id);
+            var document = await _context.Documents
+                .Include(d => d.Permissions)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
             if (document == null) return NotFound();
 
             // Only owner can delete
@@ -169,11 +189,20 @@ namespace RealTime.API.Controllers
                 return Forbid();
             }
 
+            // Collect allowed user IDs before deleting
+            var allowedUserIds = document.Permissions
+                .Select(p => p.UserId)
+                .Append(document.OwnerId)
+                .Distinct()
+                .ToList();
+
             _context.Documents.Remove(document);
             await _context.SaveChangesAsync();
 
-            // Broadcast the "deleted" event
-            await _hubContext.Clients.All.SendAsync("DocumentReceived", document, "deleted");
+            _logger.LogInformation("Document {DocumentId} deleted by user {UserId}", id, userId);
+
+            // Broadcast only to users who had access
+            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "deleted");
 
             return NoContent();
         }
@@ -234,10 +263,21 @@ namespace RealTime.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Broadcast update to all clients
+            _logger.LogInformation("Document {DocumentId} shared with {SharedEmail} as {PermissionLevel} by {UserId}",
+                id, shareDto.UserEmail, shareDto.PermissionLevel, userId);
+
+            // Reload navigation properties
             await _context.Entry(document).Reference(d => d.Owner).LoadAsync();
             await _context.Entry(document).Collection(d => d.Permissions).LoadAsync();
-            await _hubContext.Clients.All.SendAsync("DocumentReceived", document, "shared");
+
+            // Broadcast to all users with access (including the newly shared user)
+            var allowedUserIds = document.Permissions
+                .Select(p => p.UserId)
+                .Append(document.OwnerId)
+                .Distinct()
+                .ToList();
+
+            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "shared");
 
             return Ok(new { message = $"Document shared with {shareDto.UserEmail} as {shareDto.PermissionLevel}." });
         }
