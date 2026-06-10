@@ -59,135 +59,138 @@ function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const headerClasses = theme === 'dark' ? 'bg-gray-900 shadow-xl' : 'bg-white shadow-lg';
-  const backgroundClasses = theme === 'dark' ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-800';
+  const headerClasses = theme === 'dark' ? 'bg-cocoa-glass border-b border-gold-light/10 backdrop-blur-md shadow-2xl' : 'bg-cream-glass border-b border-cream-glass-border backdrop-blur-md shadow-lg';
+  const backgroundClasses = 'min-h-screen text-sand-light transition-all duration-300';
 
   return (
     <Router>
-      <Routes>
-        {/* Public Routes - Auth Pages */}
-        <Route 
-          path="/" 
-          element={
-            token ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <div className={`min-h-screen ${backgroundClasses}`}>
-                <header className={`border-b ${headerClasses} border-gray-200 dark:border-gray-800`}>
-                  <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Planner</div>
-                    
-                    <button
-                      onClick={toggleTheme}
-                      className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"
-                      aria-label="Toggle theme"
-                    >
-                      {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                    </button>
-                  </div>
-                </header>
-
-                <main className="container mx-auto py-8">
-                  <div className="flex justify-center items-start pt-20">
-                    <div className={`rounded-xl shadow-2xl w-full max-w-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                      <AuthForm onAuthSuccess={handleLogin} theme={theme} />
-                    </div>
-                  </div>
-                </main>
-              </div>
-            )
-          } 
-        />
-
-        <Route path="/verify-email" element={<VerifyEmail theme={theme} />} />
-        <Route path="/forgot-password" element={<ForgotPassword theme={theme} />} />
-        <Route path="/reset-password" element={<ResetPassword theme={theme} />} />
-
-        {/* Protected Route - Dashboard */}
-        <Route 
-          path="/dashboard" 
-          element={
-            token ? (
-              <div className={`min-h-screen ${backgroundClasses}`}>
-                <header className={`border-b ${headerClasses} border-gray-200 dark:border-gray-800`}>
-                  <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Planner</div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
+      <div className="relative min-h-screen z-0">
+        <div className="bg-drift" />
+        <Routes>
+          {/* Public Routes - Auth Pages */}
+          <Route 
+            path="/" 
+            element={
+              token ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <div className={backgroundClasses}>
+                  <header className={headerClasses}>
+                    <div className="max-w-7xl mx-auto py-4.5 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                      <div className="text-2xl font-serif font-bold text-luxury-gradient tracking-wide">REAP</div>
+                      
                       <button
                         onClick={toggleTheme}
-                        className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"
+                        className="p-2.5 rounded-xl border border-gold-light/10 text-sand-light hover:text-gold-light hover:bg-gold-glass/5 transition duration-150"
                         aria-label="Toggle theme"
                       >
-                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                      </button>
-
-                      <button 
-                        onClick={handleLogout}
-                        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-600 dark:border-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition duration-150 flex items-center space-x-2"
-                      >
-                        <LogOut size={16} />
-                        <span>Logout</span>
+                        {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                       </button>
                     </div>
-                  </div>
-                </header>
+                  </header>
 
-                <main className="container mx-auto py-8">
-                  <DocumentList token={token} theme={theme} />
-                </main>
-              </div>
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } 
-        />
-
-        {/* Protected Route - Document Editor */}
-        <Route 
-          path="/documents/:id" 
-          element={
-            token ? (
-              <div className={`min-h-screen ${backgroundClasses}`}>
-                <header className={`border-b ${headerClasses} border-gray-200 dark:border-gray-800`}>
-                  <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Editor</div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
-                      <button
-                        onClick={toggleTheme}
-                        className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"
-                        aria-label="Toggle theme"
-                      >
-                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                      </button>
-
-                      <button 
-                        onClick={handleLogout}
-                        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-600 dark:border-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition duration-150 flex items-center space-x-2"
-                      >
-                        <LogOut size={16} />
-                        <span>Logout</span>
-                      </button>
+                  <main className="container mx-auto py-8 px-4">
+                    <div className="flex justify-center items-start pt-16 md:pt-24">
+                      <div className="w-full max-w-lg rounded-2xl glass-panel shadow-3xl overflow-hidden hover-lift-gold">
+                        <AuthForm onAuthSuccess={handleLogin} theme={theme} />
+                      </div>
                     </div>
-                  </div>
-                </header>
+                  </main>
+                </div>
+              )
+            } 
+          />
 
-                <main className="container mx-auto py-8">
-                  <DocumentEditor theme={theme} />
-                </main>
-              </div>
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } 
-        />
+          <Route path="/verify-email" element={<VerifyEmail theme={theme} />} />
+          <Route path="/forgot-password" element={<ForgotPassword theme={theme} />} />
+          <Route path="/reset-password" element={<ResetPassword theme={theme} />} />
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Protected Route - Dashboard */}
+          <Route 
+            path="/dashboard" 
+            element={
+              token ? (
+                <div className={backgroundClasses}>
+                  <header className={headerClasses}>
+                    <div className="max-w-7xl mx-auto py-4.5 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                      <div className="text-2xl font-serif font-bold text-luxury-gradient tracking-wide">REAP Dashboard</div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
+                        <button
+                          onClick={toggleTheme}
+                          className="p-2.5 rounded-xl border border-gold-light/10 text-sand-light hover:text-gold-light hover:bg-gold-glass/5 transition duration-150"
+                          aria-label="Toggle theme"
+                        >
+                          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                        </button>
+
+                        <button 
+                          onClick={handleLogout}
+                          className="px-4 py-2 text-xs font-serif uppercase tracking-widest text-red-400 border border-red-500/20 rounded-xl hover:bg-red-950/10 transition duration-150 flex items-center space-x-2"
+                        >
+                          <LogOut size={14} />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </header>
+
+                  <main className="container mx-auto py-8 px-4">
+                    <DocumentList token={token} theme={theme} />
+                  </main>
+                </div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+
+          {/* Protected Route - Document Editor */}
+          <Route 
+            path="/documents/:id" 
+            element={
+              token ? (
+                <div className={backgroundClasses}>
+                  <header className={headerClasses}>
+                    <div className="max-w-7xl mx-auto py-4.5 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                      <div className="text-2xl font-serif font-bold text-luxury-gradient tracking-wide">REAP Canvas</div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
+                        <button
+                          onClick={toggleTheme}
+                          className="p-2.5 rounded-xl border border-gold-light/10 text-sand-light hover:text-gold-light hover:bg-gold-glass/5 transition duration-150"
+                          aria-label="Toggle theme"
+                        >
+                          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                        </button>
+
+                        <button 
+                          onClick={handleLogout}
+                          className="px-4 py-2 text-xs font-serif uppercase tracking-widest text-red-400 border border-red-500/20 rounded-xl hover:bg-red-950/10 transition duration-150 flex items-center space-x-2"
+                        >
+                          <LogOut size={14} />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </header>
+
+                  <main className="container mx-auto py-8 px-4">
+                    <DocumentEditor theme={theme} />
+                  </main>
+                </div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
