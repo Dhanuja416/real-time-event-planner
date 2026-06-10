@@ -193,16 +193,16 @@ const DocumentEditor = ({ theme }) => {
       Collaboration.configure({
         document: ydocRef.current || new Y.Doc(),
       }),
-      // Bind Awareness (collaborators cursors)
-      CollaborationCursor.configure({
+      // Bind Awareness (collaborators cursors) only when provider is ready
+      providerRef.current ? CollaborationCursor.configure({
         provider: providerRef.current,
         user: {
           name: userName,
           color: userColor,
         }
-      }),
+      }) : null,
       CommentMark, // Highlight comments inline
-    ],
+    ].filter(Boolean),
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
