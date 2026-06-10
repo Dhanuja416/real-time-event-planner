@@ -16,17 +16,20 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthController> _logger;
+    private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _webHostEnvironment;
 
     public AuthController(
         UserManager<IdentityUser> userManager,
         IConfiguration configuration,
         IEmailService emailService,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment)
     {
         _userManager = userManager;
         _configuration = configuration;
         _emailService = emailService;
         _logger = logger;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     // POST: api/Auth/register
@@ -49,8 +52,8 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return StatusCode(StatusCodes.Status500InternalServerError, new { Status = "Error", Message = "User creation failed! " + string.Join(", ", result.Errors.Select(e => e.Description)) });
 
-        var isDevelopment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-        if (isDevelopment)
+        var isDev = _webHostEnvironment.EnvironmentName.Equals("Development", System.StringComparison.OrdinalIgnoreCase);
+        if (isDev)
         {
             user.EmailConfirmed = true;
             await _userManager.UpdateAsync(user);
@@ -69,8 +72,21 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Email sending failed for {Email}", user.Email);
+            _logger.LogWarning(ex, "Email sending failed for {Email}. Falling back to manual verification link in Development.", user.Email);
             
+            var frontendUrl = _configuration["EmailSettings:FrontendUrl"] ?? "http://localhost:5173";
+            var verificationLink = $"{frontendUrl}/verify-email?token={encodedToken}&email={user.Email}";
+            _logger.LogWarning("DEVELOPMENT VERIFICATION LINK: {VerificationLink}", verificationLink);
+
+            if (_webHostEnvironment.EnvironmentName.Equals("Development", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return Ok(new { 
+                    Status = "Success", 
+                    Message = "Registration successful! (Email delivery failed, but auto-verified for Dev).",
+                    VerificationLink = verificationLink 
+                });
+            }
+
             return StatusCode(StatusCodes.Status500InternalServerError, new { 
                 Status = "Error", 
                 Message = "User registered successfully, but email verification failed. Please contact support or check your SendGrid configuration.",
@@ -91,8 +107,8 @@ public class AuthController : ControllerBase
             return Unauthorized(new { Status = "Error", Message = "Invalid email or password." });
 
         // Check if email is verified (bypassed in Development mode for easy testing)
-        var isDevelopment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-        if (!isDevelopment && !user.EmailConfirmed)
+        var isDevLogin = _webHostEnvironment.EnvironmentName.Equals("Development", System.StringComparison.OrdinalIgnoreCase);
+        if (!isDevLogin && !user.EmailConfirmed)
             return Unauthorized(new { Status = "Error", Message = "Please verify your email first." });
 
         // Check password
