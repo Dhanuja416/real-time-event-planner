@@ -235,6 +235,26 @@ public class AuthController : ControllerBase
             Note = "This is a development endpoint. Remove before production!"
         });
     }
+
+    // DEVELOPMENT ONLY: Delete user to let them register fresh
+    // POST: api/Auth/test-delete-user
+    [HttpPost("test-delete-user")]
+    public async Task<IActionResult> DeleteUserForTesting([FromBody] ForgotPasswordDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+            return NotFound(new { Status = "Error", Message = "User not found. Register this email first." });
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            return StatusCode(500, new { Status = "Error", Message = "Failed to delete user." });
+
+        return Ok(new { 
+            Status = "Success", 
+            Message = "User deleted successfully! You can now register this email address fresh.",
+            Note = "This is a development endpoint. Remove before production!"
+        });
+    }
 #endif
 
     private JwtSecurityToken GetToken(IdentityUser user)
