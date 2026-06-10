@@ -38,7 +38,32 @@ namespace RealTime.API.Controllers
 
         // GET: api/Documents
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Document>>> GetDocuments()
+        public async Task<ActionResult<IEnumerable<Document>>> GetDocuments([FromQuery] string? search)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var query = _context.Documents
+                .Include(d => d.Owner)
+                .Include(d => d.Permissions)
+                .Where(d => d.OwnerId == userId || d.Permissions.Any(p => p.UserId == userId));
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                var lowerSearch = search.ToLower();
+                query = query.Where(d => d.Title.ToLower().Contains(lowerSearch) || d.Content.ToLower().Contains(lowerSearch));
+            }
+
+            var documents = await query
+                .OrderByDescending(d => d.UpdatedAt)
+                .ToListAsync();
+
+            return Ok(documents);
+        }
+
+        // GET: api/Documents/recent
+        [HttpGet("recent")]
+        public async Task<ActionResult<IEnumerable<Document>>> GetRecentDocuments()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Unauthorized();
@@ -48,9 +73,64 @@ namespace RealTime.API.Controllers
                 .Include(d => d.Permissions)
                 .Where(d => d.OwnerId == userId || d.Permissions.Any(p => p.UserId == userId))
                 .OrderByDescending(d => d.UpdatedAt)
+                .Take(10)
                 .ToListAsync();
 
             return Ok(documents);
+        }
+
+        // GET: api/Documents/shared
+        [HttpGet("shared")]
+        public async Task<ActionResult<IEnumerable<Document>>> GetSharedDocuments()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var documents = await _context.Documents
+                .Include(d => d.Owner)
+                .Include(d => d.Permissions)
+                .Where(d => d.OwnerId != userId && d.Permissions.Any(p => p.UserId == userId))
+                .OrderByDescending(d => d.UpdatedAt)
+                .ToListAsync();
+
+            return Ok(documents);
+        }
+
+        // GET: api/Documents/analytics
+        [HttpGet("analytics")]
+        public async Task<ActionResult<object>> GetWorkspaceAnalytics()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var totalDocs = await _context.Documents
+                .CountAsync(d => d.OwnerId == userId || d.Permissions.Any(p => p.UserId == userId));
+
+            var ownedDocs = await _context.Documents
+                .CountAsync(d => d.OwnerId == userId);
+
+            var sharedDocs = await _context.Documents
+                .CountAsync(d => d.OwnerId != userId && d.Permissions.Any(p => p.UserId == userId));
+
+            // Comments on user's documents
+            var totalComments = await _context.Comments
+                .CountAsync(c => c.Document != null && c.Document.OwnerId == userId);
+
+            // Unique collaborators user has shared documents with
+            var uniqueCollaborators = await _context.DocumentPermissions
+                .Where(p => p.Document != null && p.Document.OwnerId == userId)
+                .Select(p => p.UserId)
+                .Distinct()
+                .CountAsync();
+
+            return Ok(new
+            {
+                TotalDocuments = totalDocs,
+                OwnedDocuments = ownedDocs,
+                SharedDocuments = sharedDocs,
+                TotalCommentsOnMyDocs = totalComments,
+                CollaboratorsCount = uniqueCollaborators
+            });
         }
 
         // GET: api/Documents/5
