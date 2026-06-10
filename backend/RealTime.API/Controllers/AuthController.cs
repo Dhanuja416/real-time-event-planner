@@ -49,9 +49,17 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return StatusCode(StatusCodes.Status500InternalServerError, new { Status = "Error", Message = "User creation failed! " + string.Join(", ", result.Errors.Select(e => e.Description)) });
 
+        var isDevelopment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        if (isDevelopment)
+        {
+            user.EmailConfirmed = true;
+            await _userManager.UpdateAsync(user);
+            return Ok(new { Status = "Success", Message = "Registration successful! Verification automatically bypassed for Development." });
+        }
+
         // Generate email confirmation token
         var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var encodedToken = WebUtility.UrlEncode(emailToken);
+        var encodedToken = System.Net.WebUtility.UrlEncode(emailToken);
 
         // Send verification email
         try
