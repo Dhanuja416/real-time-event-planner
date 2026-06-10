@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, Check, Eye, Trash2, MailOpen, AlertCircle, X } from 'lucide-react';
@@ -14,7 +14,7 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
   const dropdownRef = useRef(null);
 
   // --- Fetch Notifications ---
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!token) return;
     try {
       const response = await axios.get(NOTIFICATIONS_API, {
@@ -24,11 +24,11 @@ const NotificationBell = ({ token, hubConnection, theme }) => {
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchNotifications();
-  }, [token]);
+  }, [fetchNotifications]);
 
   // --- Click outside listener to close dropdown ---
   useEffect(() => {

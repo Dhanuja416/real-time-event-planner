@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as signalR from '@microsoft/signalr';
@@ -25,7 +25,7 @@ const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6'
 const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -181,7 +181,7 @@ const DocumentEditor = ({ theme }) => {
         connectionRef.current.stop();
       }
     };
-  }, [id, token, error]);
+  }, [id, token, error, userName, userEmail, userColor]);
 
   // 3. Set up Tiptap Editor
   const editor = useEditor({
@@ -207,7 +207,7 @@ const DocumentEditor = ({ theme }) => {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
       },
-      handleClickOn(view, pos, node, nodePos, event, direct) {
+      handleClickOn(view, pos, node, nodePos, event) {
         if (event.target.hasAttribute('data-comment-id')) {
           const commentId = event.target.getAttribute('data-comment-id');
           setActiveCommentId(commentId);
@@ -215,9 +215,6 @@ const DocumentEditor = ({ theme }) => {
           setIsCommentSidebarOpen(true);
         }
       }
-    },
-    onCreate({ editor }) {
-      // If we already had content locally loaded from Yjs, apply it
     }
   }, [loading]); // Recreate when loading changes (once provider binds)
 
@@ -229,7 +226,7 @@ const DocumentEditor = ({ theme }) => {
   }, [editor, loading]);
 
   // 4. Save state method (Triggered manually or automatically)
-  const saveDocument = async () => {
+  const saveDocument = useCallback(async () => {
     if (!editor || !ydocRef.current || !providerRef.current) return;
     
     setIsSaving(true);
@@ -256,7 +253,7 @@ const DocumentEditor = ({ theme }) => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editor, id]);
 
   // Debounced auto-save (every 10 seconds if editor is focused and content changes)
   useEffect(() => {
@@ -269,7 +266,7 @@ const DocumentEditor = ({ theme }) => {
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [editor, id]);
+  }, [editor, saveDocument]);
 
   // 5. Handle Sharing
   const handleShare = async (e) => {

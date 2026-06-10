@@ -18,10 +18,7 @@ function App() {
 
   useEffect(() => {
     if (!token) {
-      if (hubConnection) {
-        hubConnection.stop();
-        setHubConnection(null);
-      }
+      setHubConnection(null);
       return;
     }
 

@@ -1,0 +1,11 @@
+# Avoid copying unnecessary build files and settings to docker context
+**/.vs/
+**/bin/
+**/obj/
+**/*.user
+**/*.db
+**/*.log
+**/.git/
+**/.github/
+**/.gitignore
+appsettings.Development.json

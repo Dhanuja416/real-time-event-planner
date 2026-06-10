@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Mail, ArrowLeft } from 'lucide-react';
 
-const API_BASE_URL = 'https://localhost:7072/api/Auth';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_BASE_URL = `${API_BASE}/api/Auth`;
 
 const ForgotPassword = ({ theme }) => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const ForgotPassword = ({ theme }) => {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/forgot-password`, { email });
+      await axios.post(`${API_BASE_URL}/forgot-password`, { email });
       
       setSent(true);
       setLoading(false);

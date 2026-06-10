@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as signalR from '@microsoft/signalr';
@@ -15,7 +15,7 @@ const HUB_URL = `${API_BASE}/taskhub`;
 const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -58,28 +58,27 @@ const DocumentList = ({ token, theme }) => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const getApiClient = () => {
+  const apiClient = useMemo(() => {
     return axios.create({
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
-  };
-  const apiClient = getApiClient();
+  }, [token]);
 
   // Fetch Analytics statistics
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const response = await apiClient.get(`${API_URL}/analytics`);
       setAnalytics(response.data);
     } catch (err) {
       console.error('Error fetching analytics:', err);
     }
-  };
+  }, [apiClient]);
 
   // Fetch Documents
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
       let fetchUrl = API_URL;
@@ -110,14 +109,14 @@ const DocumentList = ({ token, theme }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiClient, activeTab, debouncedSearch, userId]);
 
   useEffect(() => {
     if (token) {
       fetchDocuments();
       fetchAnalytics();
     }
-  }, [token, activeTab, debouncedSearch]);
+  }, [token, fetchDocuments, fetchAnalytics]);
 
   // SignalR real-time updates for list
   useEffect(() => {
@@ -148,7 +147,7 @@ const DocumentList = ({ token, theme }) => {
     return () => {
       if (connection) connection.stop();
     };
-  }, [token, activeTab, debouncedSearch]);
+  }, [token, fetchDocuments, fetchAnalytics]);
 
   // Delete Document
   const deleteDocument = async (docId) => {

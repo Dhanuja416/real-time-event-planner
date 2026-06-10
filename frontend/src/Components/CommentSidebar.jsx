@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { MessageSquare, Check, Trash2, Send, X, CornerDownRight, CheckSquare } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
   const currentUserId = parseJwt(token)?.["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
 
   // --- Fetch Comments ---
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${COMMENTS_API}/document/${documentId}`, {
@@ -39,11 +39,11 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentId, token]);
 
   useEffect(() => {
     fetchComments();
-  }, [documentId]);
+  }, [fetchComments]);
 
   // Listen for editor selection changes to support adding comments
   useEffect(() => {
@@ -72,7 +72,7 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
     // If the parent editor connects to SignalR, it will listen to comment updates.
     // To make sure we update, we can hook into window custom events or let parent pass updates.
     // Alternatively, we can listen for a window custom event we dispatch from DocumentEditor.jsx!
-    const handleRemoteComment = (e) => {
+    const handleRemoteComment = () => {
       console.log('SignalR: Comments updated remotely, refreshing list.');
       fetchComments();
     };
@@ -81,7 +81,7 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
     return () => {
       window.removeEventListener('comments-updated', handleRemoteComment);
     };
-  }, [documentId]);
+  }, [fetchComments]);
 
   // --- Post New Thread ---
   const handleAddThread = async (e) => {
@@ -199,7 +199,7 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
           <MessageSquare size={18} />
-          <h2 className="font-bold text-sm uppercase tracking-wider">Comments</h2>
+          <h2 className={`font-bold text-sm uppercase tracking-wider ${headingColor}`}>Comments</h2>
         </div>
         <button 
           onClick={onClose}
@@ -211,7 +211,9 @@ const CommentSidebar = ({ documentId, token, editor, activeCommentId, setActiveC
 
       {/* Main Comment Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loading && comments.length === 0 ? (
+        {error ? (
+          <p className="text-red-500 text-center text-xs py-10">{error}</p>
+        ) : loading && comments.length === 0 ? (
           <p className="text-gray-500 text-center text-xs py-10">Loading comments...</p>
         ) : comments.length === 0 ? (
           <p className="text-gray-500 text-center text-xs py-10">No active comments on this document.</p>

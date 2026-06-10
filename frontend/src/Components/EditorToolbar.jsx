@@ -5,7 +5,7 @@ import {
   Save, Share2
 } from 'lucide-react';
 
-const EditorToolbar = ({ editor, onSave, isSaving, onShare, theme }) => {
+const EditorToolbar = ({ editor, onSave, isSaving, onShare }) => {
   if (!editor) return null;
 
   const btnClasses = (isActive) => `

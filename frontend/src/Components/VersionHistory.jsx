@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { History, X, RefreshCw, Eye, Calendar, User } from 'lucide-react';
 
@@ -17,7 +17,7 @@ const VersionHistory = ({ documentId, token, onClose, onRestore, theme }) => {
   const [restoring, setRestoring] = useState(false);
 
   // --- Fetch Version List ---
-  const fetchVersions = async () => {
+  const fetchVersions = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${DOCUMENTS_API}/${documentId}/versions`, {
@@ -30,11 +30,11 @@ const VersionHistory = ({ documentId, token, onClose, onRestore, theme }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentId, token]);
 
   useEffect(() => {
     fetchVersions();
-  }, [documentId]);
+  }, [fetchVersions]);
 
   // --- Fetch Specific Version Content ---
   const handleSelectVersion = async (version) => {
@@ -90,7 +90,7 @@ const VersionHistory = ({ documentId, token, onClose, onRestore, theme }) => {
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
           <History size={18} />
-          <h2 className="font-bold text-sm uppercase tracking-wider">Version History</h2>
+          <h2 className={`font-bold text-sm uppercase tracking-wider ${headingColor}`}>Version History</h2>
         </div>
         <button 
           onClick={onClose}

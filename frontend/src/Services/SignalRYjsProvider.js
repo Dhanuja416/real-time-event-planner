@@ -62,9 +62,8 @@ export class SignalRYjsProvider extends Observable {
     // 4. Awareness / Presence Syncing
     if (this.awareness) {
       // Local awareness update -> broadcast to hub
-      this._onAwarenessUpdate = ({ added, updated, removed }) => {
+      this._onAwarenessUpdate = () => {
         if (this.connected) {
-          const changedClients = added.concat(updated).concat(removed);
           // Get the current user's state
           const localState = this.awareness.getLocalState();
           
@@ -91,8 +90,8 @@ export class SignalRYjsProvider extends Observable {
             }
             this.awareness.emit('change', [{ added: [], updated: [clientId], removed: [] }]);
           }
-        } catch (e) {
-          console.error('Error parsing remote awareness:', e);
+        } catch {
+          console.error('Error parsing remote awareness.');
         }
       });
     }

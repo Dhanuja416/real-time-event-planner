@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
-const API_BASE_URL = 'https://localhost:7072/api/Auth';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
+const API_BASE_URL = `${API_BASE}/api/Auth`;
 
 const ResetPassword = ({ theme }) => {
   const [searchParams] = useSearchParams();
@@ -66,7 +67,7 @@ const ResetPassword = ({ theme }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/reset-password`, {
+      await axios.post(`${API_BASE_URL}/reset-password`, {
         email,
         token,
         newPassword

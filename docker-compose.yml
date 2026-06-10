@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: reap-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reapdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Dhanuja@1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reapdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: reap-api:latest
+    container_name: reap-api
+    build:
+      context: ./backend/RealTime.API
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=reapdb;Username=postgres;Password=Dhanuja@1234
+      - JwtSettings__Key=ThisIsAVeryStrongAndLongSecretKeyForJwtAuthenticationTokenGeneration123456
+      - JwtSettings__Issuer=REAP_API_Issuer
+      - JwtSettings__Audience=REAP_API_Clients
+      - JwtSettings__DurationInDays=7
+      - EmailSettings__SendGridApiKey=SG.DummyKeyForDevelopmentAndDockerRuns
+      - EmailSettings__SenderEmail=noreply@reapapp.com
+      - EmailSettings__SenderName=REAP System
+      - EmailSettings__FrontendUrl=http://localhost
+      - CorsSettings__AllowedOrigins__0=http://localhost
+      - CorsSettings__AllowedOrigins__1=http://localhost:80
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: reap-frontend:latest
+    container_name: reap-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
