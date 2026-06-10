@@ -174,18 +174,15 @@ const DocumentList = ({ token, theme }) => {
     }, 800);
   };
 
-  const cardBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const headingColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
-  const inputBg = theme === 'dark' ? 'bg-gray-700 text-gray-100 border-gray-600' : 'bg-gray-50 text-gray-800 border-gray-300';
-
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-10 animate-fade-in">
       {/* Dashboard Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-gold-light/10 pb-6">
         <div>
-          <h1 className={`text-3xl font-extrabold tracking-tight ${headingColor}`}>Workspace Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Welcome back, <span className="font-semibold text-blue-600 dark:text-blue-400">{userEmail.split('@')[0]}</span>
+          <span className="text-[10px] uppercase tracking-widest text-gold-light/70 font-semibold">Workspace Dashboard</span>
+          <h1 className="text-4xl font-serif font-bold text-luxury-gradient mt-1">Collab Canvas</h1>
+          <p className="text-xs text-sand-light/65 mt-1 font-medium">
+            Welcome back, <span className="text-gold-light font-semibold">{userEmail.split('@')[0]}</span>
           </p>
         </div>
 
@@ -194,70 +191,70 @@ const DocumentList = ({ token, theme }) => {
             setProfileName(localStorage.getItem('userDisplayName') || userEmail.split('@')[0]);
             setIsProfileOpen(true);
           }}
-          className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl border border-gray-300 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-150 dark:hover:bg-gray-800 transition shadow-sm"
+          className="flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl border border-gold-light/20 text-xs font-serif uppercase tracking-widest text-gold-light hover:bg-gold-glass/10 transition-all duration-300 shadow-sm"
         >
-          <Settings size={16} />
+          <Settings size={14} />
           <span>Profile Settings</span>
         </button>
       </div>
 
       {/* Analytics Summary Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Total Documents */}
-        <div className={`p-4 rounded-2xl border shadow-md flex items-center gap-4 ${cardBg}`}>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-            <FileText size={22} />
+        <div className="p-5 rounded-2xl glass-panel hover-lift-gold flex items-center gap-5">
+          <div className="p-3 rounded-xl bg-gold-glass border border-gold-light/20 text-gold-light">
+            <FileText size={20} />
           </div>
           <div>
-            <span className="text-xs text-gray-400 font-semibold block uppercase">Total Files</span>
-            <span className={`text-2xl font-bold ${headingColor}`}>{analytics.totalDocuments}</span>
+            <span className="text-[10px] text-sand-light/50 font-bold block uppercase tracking-widest">Total Files</span>
+            <span className="text-2xl font-serif font-bold text-luxury-gradient">{analytics.totalDocuments}</span>
           </div>
         </div>
 
         {/* Owned Documents */}
-        <div className={`p-4 rounded-2xl border shadow-md flex items-center gap-4 ${cardBg}`}>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-            <Shield size={22} />
+        <div className="p-5 rounded-2xl glass-panel hover-lift-gold flex items-center gap-5">
+          <div className="p-3 rounded-xl bg-gold-glass border border-gold-light/20 text-gold-light">
+            <Shield size={20} />
           </div>
           <div>
-            <span className="text-xs text-gray-400 font-semibold block uppercase">My Docs</span>
-            <span className={`text-2xl font-bold ${headingColor}`}>{analytics.ownedDocuments}</span>
+            <span className="text-[10px] text-sand-light/50 font-bold block uppercase tracking-widest">My Canvas</span>
+            <span className="text-2xl font-serif font-bold text-luxury-gradient">{analytics.ownedDocuments}</span>
           </div>
         </div>
 
         {/* Shared Documents */}
-        <div className={`p-4 rounded-2xl border shadow-md flex items-center gap-4 ${cardBg}`}>
-          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
-            <Users size={22} />
+        <div className="p-5 rounded-2xl glass-panel hover-lift-gold flex items-center gap-5">
+          <div className="p-3 rounded-xl bg-gold-glass border border-gold-light/20 text-gold-light">
+            <Users size={20} />
           </div>
           <div>
-            <span className="text-xs text-gray-400 font-semibold block uppercase">Shared</span>
-            <span className={`text-2xl font-bold ${headingColor}`}>{analytics.sharedDocuments}</span>
+            <span className="text-[10px] text-sand-light/50 font-bold block uppercase tracking-widest">Shared</span>
+            <span className="text-2xl font-serif font-bold text-luxury-gradient">{analytics.sharedDocuments}</span>
           </div>
         </div>
 
         {/* Comments Count */}
-        <div className={`p-4 rounded-2xl border shadow-md flex items-center gap-4 ${cardBg}`}>
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-            <MessageSquare size={22} />
+        <div className="p-5 rounded-2xl glass-panel hover-lift-gold flex items-center gap-5">
+          <div className="p-3 rounded-xl bg-gold-glass border border-gold-light/20 text-gold-light">
+            <MessageSquare size={20} />
           </div>
           <div>
-            <span className="text-xs text-gray-400 font-semibold block uppercase">Comments</span>
-            <span className={`text-2xl font-bold ${headingColor}`}>{analytics.totalCommentsOnMyDocs}</span>
+            <span className="text-[10px] text-sand-light/50 font-bold block uppercase tracking-widest">Comments</span>
+            <span className="text-2xl font-serif font-bold text-luxury-gradient">{analytics.totalCommentsOnMyDocs}</span>
           </div>
         </div>
       </div>
 
       {/* Document Form Area */}
-      <div className={`p-6 rounded-2xl border shadow-md ${cardBg}`}>
+      <div className="p-6 rounded-2xl glass-panel hover-lift-gold">
         <DocumentForm onDocumentCreated={() => { fetchDocuments(); fetchAnalytics(); }} theme={theme} />
       </div>
 
       {/* Main Grid Area: Lists, Tabs, and Filter Controls */}
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-gold-light/10 pb-4">
           {/* Tabs Control */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'all', label: 'All Files', icon: FileText },
               { id: 'owned', label: 'My Docs', icon: Shield },
@@ -270,14 +267,14 @@ const DocumentList = ({ token, theme }) => {
                 <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition
+                  className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-xs font-serif uppercase tracking-widest transition duration-300
                     ${isSelected 
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-luxury-gold-button text-cocoa-darkest shadow-md' 
+                      : 'text-sand-light hover:text-gold-light hover:bg-gold-glass/5'
                     }
                   `}
                 >
-                  <TabIcon size={16} />
+                  <TabIcon size={12} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -286,23 +283,23 @@ const DocumentList = ({ token, theme }) => {
 
           {/* Search Filtering Bar */}
           {activeTab !== 'recent' && (
-            <div className="relative w-full md:w-80">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                <Search size={16} />
+            <div className="relative w-full lg:w-80">
+              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gold-light/60">
+                <Search size={14} />
               </span>
               <input
                 type="text"
-                placeholder="Search by title or content..."
+                placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-10 pr-9 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition ${inputBg}`}
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl glass-input placeholder-sand-light/40 text-xs tracking-wider font-semibold"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sand-light/50 hover:text-gold-light"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -311,39 +308,45 @@ const DocumentList = ({ token, theme }) => {
 
         {/* Documents Render Box */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="p-3 rounded-full bg-gold-glass animate-pulse border border-gold-light/20">
+              <Clock className="w-8 h-8 text-gold-light animate-spin" />
+            </div>
+            <p className="text-xs uppercase tracking-widest text-sand-light/70 animate-pulse font-semibold">Syncing canvases...</p>
           </div>
         ) : error ? (
-          <p className="text-red-500 text-center py-10 font-medium">{error}</p>
+          <div className="p-6 rounded-xl border border-red-500/20 bg-red-950/10 text-center text-red-400 font-semibold text-sm">
+            {error}
+          </div>
         ) : documents.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-            <FileText size={48} className="mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-            <h3 className={`text-md font-bold ${headingColor}`}>No documents found</h3>
-            <p className="text-xs text-gray-400 mt-1">
-              {searchQuery ? 'Try adjusting your search criteria.' : 'Create a new document to get started.'}
+          <div className="text-center py-20 glass-panel rounded-2xl border-dashed">
+            <FileText size={40} className="mx-auto text-gold-light/40 mb-4 animate-pulse" />
+            <h3 className="text-lg font-serif font-bold text-gold-light">No documents found</h3>
+            <p className="text-xs text-sand-light/60 mt-1.5 max-w-xs mx-auto leading-relaxed">
+              {searchQuery ? 'Try adjusting your search criteria.' : 'Create a new collaborative document above to start planning.'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {documents.map((doc) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {documents.map((doc, idx) => (
               <div 
                 key={doc.id}
                 onClick={() => navigate(`/documents/${doc.id}`)}
-                className={`p-4 rounded-xl border shadow-sm flex items-center justify-between cursor-pointer group hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition duration-150 ${cardBg}`}
+                className="p-5 rounded-2xl glass-panel hover-lift-gold flex items-center justify-between cursor-pointer group animate-fade-in"
+                style={{ animationDelay: `${idx * 0.05}s` }}
               >
-                <div className="flex items-center space-x-3.5 min-w-0">
-                  <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 group-hover:scale-105 transition">
-                    <FileText size={20} />
+                <div className="flex items-center space-x-4 min-w-0">
+                  <div className="p-3 rounded-xl bg-gold-glass border border-gold-light/10 text-gold-light group-hover:scale-105 transition duration-300">
+                    <FileText size={18} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className={`font-bold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition truncate ${headingColor}`}>
+                    <h3 className="font-serif font-bold text-base text-f5f0eb group-hover:text-gold-light transition duration-300 truncate">
                       {doc.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 text-[10px] text-sand-light/50 font-bold uppercase mt-1 tracking-wider">
                       <span>Owner: {doc.owner?.userName === userEmail ? 'me' : doc.owner?.userName?.split('@')[0]}</span>
                       <span>•</span>
-                      <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
+                      <span>{new Date(doc.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                   </div>
                 </div>
@@ -356,10 +359,10 @@ const DocumentList = ({ token, theme }) => {
                         e.stopPropagation();
                         deleteDocument(doc.id);
                       }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                      className="p-2.5 rounded-xl border border-transparent hover:border-red-500/20 text-sand-light hover:text-red-400 hover:bg-red-950/20 transition duration-300"
                       title="Delete document"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
@@ -371,36 +374,36 @@ const DocumentList = ({ token, theme }) => {
 
       {/* User Profile Modal Dialog */}
       {isProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className={`w-full max-w-md p-6 rounded-2xl border shadow-2xl ${cardBg}`}>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
-                <User size={18} />
-                <h3 className={`text-lg font-bold ${headingColor}`}>Profile Settings</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md p-8 rounded-2xl glass-panel shadow-3xl">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-gold-light/10">
+              <div className="flex items-center space-x-2.5 text-gold-light">
+                <User size={16} />
+                <h3 className="text-lg font-serif font-bold">Profile settings</h3>
               </div>
               <button 
                 onClick={() => setIsProfileOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                className="p-1 rounded-full text-sand-light hover:text-gold-light transition"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
+            <form onSubmit={handleSaveProfile} className="space-y-6">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                <label className="block text-xs uppercase tracking-widest font-semibold text-gold-light/80 mb-2 ml-1">
                   Email Address
                 </label>
                 <input
                   type="text"
                   value={userEmail}
                   disabled
-                  className="w-full p-2.5 rounded-lg border bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed text-sm focus:outline-none"
+                  className="w-full p-3.5 rounded-xl border bg-cocoa-darkest/45 text-sand-light/50 border-gold-light/10 cursor-not-allowed text-xs tracking-wider font-semibold focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                <label className="block text-xs uppercase tracking-widest font-semibold text-gold-light/80 mb-2 ml-1">
                   Display Name
                 </label>
                 <input
@@ -410,24 +413,24 @@ const DocumentList = ({ token, theme }) => {
                   onChange={(e) => setProfileName(e.target.value)}
                   required
                   disabled={isProfileSaving}
-                  className={`w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm ${inputBg}`}
+                  className="w-full p-3.5 rounded-xl glass-input placeholder-sand-light/40 text-xs tracking-wider font-semibold"
                 />
               </div>
 
-              <div className="flex gap-2.5 pt-2">
+              <div className="flex gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(false)}
-                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-lg text-xs font-semibold transition"
+                  className="flex-1 py-3 border border-gold-light/20 text-gold-light hover:bg-gold-glass/10 rounded-xl text-xs uppercase font-serif tracking-widest transition duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isProfileSaving || !profileName.trim()}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-500/20 transition disabled:opacity-50 flex items-center justify-center gap-1"
+                  className="flex-1 py-3 bg-luxury-gold-button text-cocoa-darkest rounded-xl text-xs uppercase font-serif tracking-widest shadow-md transition duration-300 flex items-center justify-center gap-1.5"
                 >
-                  {isProfileSaving ? 'Saving...' : <><Check size={14} /><span>Save Profile</span></>}
+                  {isProfileSaving ? 'Saving...' : <><Check size={12} /><span>Save Changes</span></>}
                 </button>
               </div>
             </form>
