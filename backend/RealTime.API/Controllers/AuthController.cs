@@ -82,8 +82,9 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized(new { Status = "Error", Message = "Invalid email or password." });
 
-        // Check if email is verified
-        if (!user.EmailConfirmed)
+        // Check if email is verified (bypassed in Development mode for easy testing)
+        var isDevelopment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        if (!isDevelopment && !user.EmailConfirmed)
             return Unauthorized(new { Status = "Error", Message = "Please verify your email first." });
 
         // Check password

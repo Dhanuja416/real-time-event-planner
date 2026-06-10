@@ -39,7 +39,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Identity Service: User management with security settings
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-    options.SignIn.RequireConfirmedEmail = true;
+    options.SignIn.RequireConfirmedEmail = !builder.Environment.IsDevelopment();
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
