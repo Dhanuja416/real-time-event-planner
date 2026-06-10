@@ -7,7 +7,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import { ArrowLeft, Share2, Save, CheckCircle2, AlertCircle, Users, X, MessageSquare, History } from 'lucide-react';
+import { Awareness } from 'y-protocols/awareness';
+import { ArrowLeft, Share2, Save, CheckCircle2, AlertCircle, Users, X, MessageSquare, History, Loader } from 'lucide-react';
 
 import { SignalRYjsProvider } from '../Services/SignalRYjsProvider';
 import EditorToolbar from './EditorToolbar';
@@ -55,7 +56,8 @@ const DocumentEditor = ({ theme }) => {
   const [activeCommentId, setActiveCommentId] = useState(null);
 
   // References for cleanup
-  const ydocRef = useRef(null);
+  const ydocRef = useRef(new Y.Doc());
+  const awarenessRef = useRef(new Awareness(ydocRef.current));
   const providerRef = useRef(null);
   const connectionRef = useRef(null);
 
@@ -99,11 +101,13 @@ const DocumentEditor = ({ theme }) => {
     if (!token || error) return;
 
     let active = true;
+    let provider = null;
+    let connection = null;
 
     const initConnection = async () => {
       try {
         // Create SignalR connection
-        const connection = new signalR.HubConnectionBuilder()
+        connection = new signalR.HubConnectionBuilder()
           .withUrl(HUB_URL, { accessTokenFactory: () => token })
           .withAutomaticReconnect()
           .build();
@@ -118,23 +122,15 @@ const DocumentEditor = ({ theme }) => {
           return;
         }
 
-        // Initialize Y.js Doc
-        const ydoc = new Y.Doc();
-        ydocRef.current = ydoc;
-
-        // Initialize Awareness (protocols/awareness)
-        // The collaboration cursor extension needs provider.awareness.
-        // We will pass an awareness instance to the provider.
-        const { Awareness } = await import('y-protocols/awareness');
-        const awareness = new Awareness(ydoc);
-        awareness.setLocalStateField('user', {
+        // Initialize local awareness user details
+        awarenessRef.current.setLocalStateField('user', {
           name: userName,
           email: userEmail,
           color: userColor
         });
 
         // Initialize custom provider
-        const provider = new SignalRYjsProvider(connection, parseInt(id), ydoc, awareness);
+        provider = new SignalRYjsProvider(connection, parseInt(id), ydocRef.current, awarenessRef.current);
         providerRef.current = provider;
 
         provider.on('status', ({ status }) => {
@@ -142,7 +138,7 @@ const DocumentEditor = ({ theme }) => {
         });
 
         provider.on('synced', (synced) => {
-          if (synced) {
+          if (synced && active) {
             setLoading(false);
           }
         });
@@ -174,11 +170,11 @@ const DocumentEditor = ({ theme }) => {
 
     return () => {
       active = false;
-      if (providerRef.current) {
-        providerRef.current.destroy();
+      if (provider) {
+        provider.destroy();
       }
-      if (connectionRef.current) {
-        connectionRef.current.stop();
+      if (connection) {
+        connection.stop();
       }
     };
   }, [id, token, error, userName, userEmail, userColor]);
@@ -191,18 +187,18 @@ const DocumentEditor = ({ theme }) => {
       }),
       // Bind Yjs document
       Collaboration.configure({
-        document: ydocRef.current || new Y.Doc(),
+        document: ydocRef.current,
       }),
-      // Bind Awareness (collaborators cursors) only when provider is ready
-      providerRef.current ? CollaborationCursor.configure({
-        provider: providerRef.current,
+      // Bind Awareness (collaborators cursors)
+      CollaborationCursor.configure({
+        provider: { awareness: awarenessRef.current },
         user: {
           name: userName,
           color: userColor,
         }
-      }) : null,
+      }),
       CommentMark, // Highlight comments inline
-    ].filter(Boolean),
+    ],
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
@@ -216,7 +212,7 @@ const DocumentEditor = ({ theme }) => {
         }
       }
     }
-  }, [loading]); // Recreate when loading changes (once provider binds)
+  }, []); // Initialize only once
 
   // Sync editor with Y.js doc after they are initialized
   useEffect(() => {
@@ -300,34 +296,33 @@ const DocumentEditor = ({ theme }) => {
     }
   };
 
-  // Layout styling
-  const cardBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const headingColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800';
-  const inputBg = theme === 'dark' ? 'bg-gray-700 text-gray-100 border-gray-600' : 'bg-gray-50 text-gray-800 border-gray-300';
 
   if (loading && !error) {
     return (
-      <div className="max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Opening collaborative canvas...</p>
+      <div className="max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[500px] animate-pulse">
+        <div className="p-4 rounded-full bg-gold-glass border border-gold-light/25 mb-4">
+          <Loader className="w-10 h-10 text-gold-light animate-spin" />
+        </div>
+        <p className="text-xs uppercase tracking-widest text-sand-light/70 font-semibold">Opening collaborative canvas...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-md mx-auto mt-20 p-6 rounded-xl border shadow-xl bg-white dark:bg-gray-800 border-red-200 dark:border-red-900/50">
-        <div className="flex items-center space-x-3 text-red-600 dark:text-red-400 mb-4">
-          <AlertCircle size={32} />
-          <h2 className="text-xl font-bold">Access Error</h2>
+      <div className="max-w-md mx-auto mt-20 p-8 glass-panel rounded-2xl shadow-3xl text-center animate-fade-in">
+        <div className="flex justify-center mb-6">
+          <div className="p-4 rounded-full bg-red-950/20 border border-red-500/30">
+            <AlertCircle className="w-10 h-10 text-red-400" />
+          </div>
         </div>
-        <p className="text-gray-700 dark:text-gray-300 mb-6">{error}</p>
+        <h2 className="text-2xl font-serif font-bold text-luxury-gradient mb-3">Access Denied</h2>
+        <p className="text-xs text-sand-light/80 leading-relaxed mb-8">{error}</p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-lg transition font-medium"
+          className="w-full py-3.5 rounded-xl bg-luxury-gold-button font-serif tracking-widest text-sm uppercase transition-all duration-300"
         >
-          <ArrowLeft size={16} />
-          <span>Back to Dashboard</span>
+          Back to Dashboard
         </button>
       </div>
     );
@@ -336,73 +331,72 @@ const DocumentEditor = ({ theme }) => {
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8">
       {/* Editor Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center space-x-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8 border-b border-gold-light/10 pb-5">
+        <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition duration-150"
+            className="p-3 rounded-xl border border-gold-light/10 text-sand-light hover:text-gold-light hover:bg-gold-glass/5 transition duration-300"
             title="Back to Dashboard"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 className={`text-2xl font-bold ${headingColor} truncate max-w-md`}>
+            <span className="text-[10px] uppercase tracking-widest text-gold-light/70 font-semibold block">REAP Canvas</span>
+            <h1 className="text-2xl font-serif font-bold text-luxury-gradient mt-0.5 truncate max-w-md">
               {documentDetails?.title || 'Loading document...'}
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Owned by: {documentDetails?.owner?.userName === userEmail ? 'me' : documentDetails?.owner?.userName || 'unknown'}
+            <p className="text-[10px] text-sand-light/50 font-bold uppercase tracking-wider mt-0.5">
+              Owner: {documentDetails?.owner?.userName === userEmail ? 'me' : documentDetails?.owner?.userName || 'unknown'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
           {/* Active Collaborators list */}
-          {providerRef.current?.awareness && (
-            <CollaboratorPresence awareness={providerRef.current.awareness} />
-          )}
+          <CollaboratorPresence awareness={awarenessRef.current} />
 
           {/* Panel Toggles */}
-          <div className="flex items-center space-x-1 border-l border-gray-200 dark:border-gray-800 pl-3">
+          <div className="flex items-center space-x-1.5 border-l border-gold-light/10 pl-4">
             <button
               onClick={() => {
                 setIsVersionSidebarOpen(false);
                 setIsCommentSidebarOpen(!isCommentSidebarOpen);
               }}
-              className={`p-2 rounded-full transition duration-150 ${
+              className={`p-2.5 rounded-xl border transition-all duration-300 ${
                 isCommentSidebarOpen 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-gold-glass border-gold-light/30 text-gold-light' 
+                  : 'border-transparent text-sand-light hover:text-gold-light hover:bg-gold-glass/5'
               }`}
               title="Toggle Comments"
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={16} />
             </button>
             <button
               onClick={() => {
                 setIsCommentSidebarOpen(false);
                 setIsVersionSidebarOpen(!isVersionSidebarOpen);
               }}
-              className={`p-2 rounded-full transition duration-150 ${
+              className={`p-2.5 rounded-xl border transition-all duration-300 ${
                 isVersionSidebarOpen 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-gold-glass border-gold-light/30 text-gold-light' 
+                  : 'border-transparent text-sand-light hover:text-gold-light hover:bg-gold-glass/5'
               }`}
               title="Toggle Version History"
             >
-              <History size={18} />
+              <History size={16} />
             </button>
           </div>
 
           {/* Save status notification badge */}
           {saveStatus && (
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold
-              ${saveStatus === 'saving' && 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'}
-              ${saveStatus === 'saved' && 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400'}
-              ${saveStatus === 'error' && 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'}
+            <div className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all duration-300
+              ${saveStatus === 'saving' && 'bg-cocoa-darkest/45 border-gold-light/10 text-gold-light'}
+              ${saveStatus === 'saved' && 'bg-gold-glass border-gold-light/35 text-gold-light'}
+              ${saveStatus === 'error' && 'bg-red-950/20 border-red-500/30 text-red-400'}
             `}>
-              {saveStatus === 'saving' && <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />}
-              {saveStatus === 'saved' && <CheckCircle2 size={14} />}
-              {saveStatus === 'error' && <AlertCircle size={14} />}
+              {saveStatus === 'saving' && <div className="w-1.5 h-1.5 rounded-full bg-gold-light animate-ping" />}
+              {saveStatus === 'saved' && <CheckCircle2 size={12} />}
+              {saveStatus === 'error' && <AlertCircle size={12} />}
               <span>
                 {saveStatus === 'saving' && 'Saving...'}
                 {saveStatus === 'saved' && 'Saved'}
@@ -416,7 +410,7 @@ const DocumentEditor = ({ theme }) => {
       {/* Editor and Sidebar layout wrapper */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Editor Canvas Card */}
-        <div className={`flex-1 w-full rounded-xl border shadow-2xl ${cardBg} overflow-hidden`}>
+        <div className="flex-1 w-full rounded-2xl glass-panel overflow-hidden hover-lift-gold">
           {/* Editor formatting toolbar */}
           <EditorToolbar 
             editor={editor} 
@@ -427,14 +421,14 @@ const DocumentEditor = ({ theme }) => {
           />
 
           {/* ProseMirror Editor Content */}
-          <div className="bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200">
-            <EditorContent editor={editor} />
+          <div className="bg-cocoa-darkest/30 dark:bg-cocoa-darkest/35 text-f5f0eb p-6 md:p-10">
+            {editor && <EditorContent editor={editor} />}
           </div>
         </div>
 
         {/* Comments Sidebar Panel */}
         {isCommentSidebarOpen && (
-          <div className="w-full lg:w-auto h-[600px] lg:h-[500px]">
+          <div className="w-full lg:w-auto h-[600px] lg:h-[500px] animate-fade-in">
             <CommentSidebar
               documentId={id}
               token={token}
@@ -449,7 +443,7 @@ const DocumentEditor = ({ theme }) => {
 
         {/* Version History Sidebar Panel */}
         {isVersionSidebarOpen && (
-          <div className="w-full lg:w-auto h-[600px] lg:h-[500px]">
+          <div className="w-full lg:w-auto h-[600px] lg:h-[500px] animate-fade-in">
             <VersionHistory
               documentId={id}
               token={token}
@@ -465,12 +459,12 @@ const DocumentEditor = ({ theme }) => {
 
       {/* Share Modal Dialog */}
       {isShareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className={`w-full max-w-md p-6 rounded-xl border shadow-2xl ${cardBg}`}>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
-                <Users size={20} />
-                <h3 className={`text-lg font-bold ${headingColor}`}>Share Document</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md p-8 rounded-2xl glass-panel shadow-3xl">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-gold-light/10">
+              <div className="flex items-center space-x-2.5 text-gold-light">
+                <Users size={16} />
+                <h3 className="text-lg font-serif font-bold">Share Document</h3>
               </div>
               <button 
                 onClick={() => {
@@ -478,18 +472,26 @@ const DocumentEditor = ({ theme }) => {
                   setShareSuccess(null);
                   setShareError(null);
                 }}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                className="p-1 rounded-full text-sand-light hover:text-gold-light transition"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleShare} className="space-y-4">
-              {shareError && <p className="text-red-500 text-sm">{shareError}</p>}
-              {shareSuccess && <p className="text-green-500 text-sm font-semibold">{shareSuccess}</p>}
+            <form onSubmit={handleShare} className="space-y-6">
+              {shareError && (
+                <div className="p-4 rounded-xl text-xs font-semibold tracking-wide border bg-red-950/20 border-red-500/30 text-red-400">
+                  {shareError}
+                </div>
+              )}
+              {shareSuccess && (
+                <div className="p-4 rounded-xl text-xs font-semibold tracking-wide border bg-gold-glass border-gold-light/25 text-gold-light">
+                  {shareSuccess}
+                </div>
+              )}
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                <label className="block text-xs uppercase tracking-widest font-semibold text-gold-light/80 mb-2 ml-1">
                   Collaborator Email
                 </label>
                 <input
@@ -499,19 +501,19 @@ const DocumentEditor = ({ theme }) => {
                   onChange={(e) => setShareEmail(e.target.value)}
                   required
                   disabled={shareLoading}
-                  className={`w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none ${inputBg}`}
+                  className="w-full p-3.5 rounded-xl glass-input placeholder-sand-light/40 text-xs tracking-wider font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                <label className="block text-xs uppercase tracking-widest font-semibold text-gold-light/80 mb-2 ml-1">
                   Access Level
                 </label>
                 <select
                   value={shareLevel}
                   onChange={(e) => setShareLevel(e.target.value)}
                   disabled={shareLoading}
-                  className={`w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none ${inputBg}`}
+                  className="w-full p-3.5 rounded-xl glass-input text-xs tracking-wider font-semibold"
                 >
                   <option value={1}>Viewer (Read-Only)</option>
                   <option value={2}>Editor (Can Edit)</option>
@@ -521,7 +523,7 @@ const DocumentEditor = ({ theme }) => {
               <button
                 type="submit"
                 disabled={shareLoading || !shareEmail}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-md shadow-blue-500/20 transition disabled:opacity-50"
+                className="w-full py-3 bg-luxury-gold-button text-cocoa-darkest rounded-xl text-xs uppercase font-serif tracking-widest shadow-md transition duration-300"
               >
                 {shareLoading ? 'Sharing...' : 'Add Collaborator'}
               </button>
@@ -529,15 +531,15 @@ const DocumentEditor = ({ theme }) => {
 
             {/* List of current permissions */}
             {documentDetails?.permissions && documentDetails.permissions.length > 0 && (
-              <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                  Who has access:
+              <div className="mt-6 border-t border-gold-light/10 pt-4">
+                <h4 className="text-[10px] uppercase tracking-widest font-bold text-gold-light/75 mb-3">
+                  Authorized Collaborators:
                 </h4>
-                <div className="max-h-32 overflow-y-auto space-y-2">
+                <div className="max-h-32 overflow-y-auto space-y-2.5 pr-1">
                   {documentDetails.permissions.map((perm) => (
-                    <div key={perm.id} className="flex justify-between items-center text-xs py-1 text-gray-700 dark:text-gray-300">
-                      <span className="truncate max-w-[200px]">{perm.user?.userName || 'User'}</span>
-                      <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-[10px] font-semibold">
+                    <div key={perm.id} className="flex justify-between items-center text-xs py-1.5 border-b border-gold-light/5 text-sand-light">
+                      <span className="truncate max-w-[220px] font-semibold">{perm.user?.userName || 'User'}</span>
+                      <span className="px-2 py-0.5 rounded border border-gold-light/10 bg-gold-glass text-[9px] uppercase tracking-wider font-bold text-gold-light">
                         {perm.level === 1 ? 'Viewer' : perm.level === 2 ? 'Editor' : 'Owner'}
                       </span>
                     </div>
