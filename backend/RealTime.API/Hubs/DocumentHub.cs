@@ -91,6 +91,28 @@ namespace RealTime.API.Hubs
             var document = await _context.Documents.FindAsync(documentId);
             if (document != null)
             {
+                // Capture version snapshot if 5 minutes have elapsed since the last checkpoint
+                var lastVersion = await _context.DocumentVersions
+                    .Where(v => v.DocumentId == documentId)
+                    .OrderByDescending(v => v.VersionNumber)
+                    .FirstOrDefaultAsync();
+
+                if (lastVersion == null || (DateTime.UtcNow - lastVersion.CreatedAt).TotalMinutes >= 5)
+                {
+                    var newVersionNumber = (lastVersion?.VersionNumber ?? 0) + 1;
+                    var versionSnapshot = new DocumentVersion
+                    {
+                        DocumentId = documentId,
+                        Content = htmlContent,
+                        ContentBinary = stateBytes,
+                        VersionNumber = newVersionNumber,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedById = userId
+                    };
+                    _context.DocumentVersions.Add(versionSnapshot);
+                    _logger.LogInformation("Captured version snapshot {VersionNumber} for document {DocumentId}", newVersionNumber, documentId);
+                }
+
                 document.ContentBinary = stateBytes;
                 document.Content = htmlContent;
                 document.LastEditedById = userId;

@@ -6,12 +6,43 @@ import VerifyEmail from './Components/VerifyEmail';
 import ForgotPassword from './Components/ForgotPassword';
 import ResetPassword from './Components/ResetPassword';
 import DocumentEditor from './Components/DocumentEditor';
+import NotificationBell from './Components/NotificationBell';
+import * as signalR from '@microsoft/signalr';
 import './App.css'; 
 import { Sun, Moon, LogOut } from 'lucide-react'; // Using lucide-react for icons
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('jwtToken') || null);
   const [theme, setTheme] = useState('light'); // Initial theme state
+  const [hubConnection, setHubConnection] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      if (hubConnection) {
+        hubConnection.stop();
+        setHubConnection(null);
+      }
+      return;
+    }
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072'}/documenthub`, {
+        accessTokenFactory: () => token
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+      .then(() => {
+        console.log('App: Connected to notification socket.');
+        setHubConnection(connection);
+      })
+      .catch(err => console.error('App: Failed to connect to notification socket:', err));
+
+    return () => {
+      connection.stop();
+    };
+  }, [token]);
 
   useEffect(() => {
     // Apply the theme class to the document body
@@ -86,6 +117,7 @@ function App() {
                     <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Planner</div>
                     
                     <div className="flex items-center space-x-4">
+                      <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
                       <button
                         onClick={toggleTheme}
                         className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"
@@ -126,6 +158,7 @@ function App() {
                     <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">REAP Editor</div>
                     
                     <div className="flex items-center space-x-4">
+                      <NotificationBell token={token} hubConnection={hubConnection} theme={theme} />
                       <button
                         onClick={toggleTheme}
                         className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150"

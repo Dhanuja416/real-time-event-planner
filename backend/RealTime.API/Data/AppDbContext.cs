@@ -20,6 +20,8 @@ namespace RealTime.API.Data
         public DbSet<Document> Documents { get; set; }
         public DbSet<DocumentPermission> DocumentPermissions { get; set; }
         public DbSet<DocumentVersion> DocumentVersions { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Comment> Comments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -69,6 +71,44 @@ namespace RealTime.API.Data
                 .HasOne(d => d.CreatedBy)
                 .WithMany()
                 .HasForeignKey(d => d.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure Notification relationships
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Document)
+                .WithMany()
+                .HasForeignKey(n => n.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure Comment relationships
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.Document)
+                .WithMany()
+                .HasForeignKey(c => c.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.ParentComment)
+                .WithMany(c => c.Replies)
+                .HasForeignKey(c => c.ParentCommentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(c => c.ResolvedById)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

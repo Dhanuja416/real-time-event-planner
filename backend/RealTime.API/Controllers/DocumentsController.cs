@@ -18,17 +18,20 @@ namespace RealTime.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IHubContext<TaskHub> _hubContext;
+        private readonly IHubContext<DocumentHub> _documentHubContext;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<DocumentsController> _logger;
 
         public DocumentsController(
             AppDbContext context,
             IHubContext<TaskHub> hubContext,
+            IHubContext<DocumentHub> documentHubContext,
             UserManager<IdentityUser> userManager,
             ILogger<DocumentsController> logger)
         {
             _context = context;
             _hubContext = hubContext;
+            _documentHubContext = documentHubContext;
             _userManager = userManager;
             _logger = logger;
         }
@@ -263,6 +266,38 @@ namespace RealTime.API.Controllers
 
             await _context.SaveChangesAsync();
 
+            // Create notification for shared user
+            try
+            {
+                var sharingUser = await _userManager.FindByIdAsync(userId);
+                var notification = new Notification
+                {
+                    UserId = userToShareWith.Id,
+                    Type = "DocumentShared",
+                    Message = $"{sharingUser?.UserName ?? "Someone"} shared the document \"{document.Title}\" with you.",
+                    DocumentId = id,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Notifications.Add(notification);
+                await _context.SaveChangesAsync();
+
+                // Broadcast notification in real-time
+                await _documentHubContext.Clients.User(userToShareWith.Id).SendAsync("ReceiveNotification", new
+                {
+                    notification.Id,
+                    notification.Type,
+                    notification.Message,
+                    notification.DocumentId,
+                    notification.IsRead,
+                    notification.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create sharing notification for document {DocumentId}", id);
+            }
+
             _logger.LogInformation("Document {DocumentId} shared with {SharedEmail} as {PermissionLevel} by {UserId}",
                 id, shareDto.UserEmail, shareDto.PermissionLevel, userId);
 
@@ -280,6 +315,134 @@ namespace RealTime.API.Controllers
             await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "shared");
 
             return Ok(new { message = $"Document shared with {shareDto.UserEmail} as {shareDto.PermissionLevel}." });
+        }
+
+        // GET: api/Documents/{id}/versions
+        [HttpGet("{id}/versions")]
+        public async Task<ActionResult<IEnumerable<object>>> GetVersions(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var document = await _context.Documents
+                .Include(d => d.Permissions)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (document == null) return NotFound();
+
+            // Check access
+            var hasAccess = document.OwnerId == userId || document.Permissions.Any(p => p.UserId == userId);
+            if (!hasAccess) return Forbid();
+
+            var versions = await _context.DocumentVersions
+                .Include(v => v.CreatedBy)
+                .Where(v => v.DocumentId == id)
+                .OrderByDescending(v => v.VersionNumber)
+                .Select(v => new
+                {
+                    v.Id,
+                    v.DocumentId,
+                    v.VersionNumber,
+                    v.CreatedAt,
+                    CreatedByEmail = v.CreatedBy != null ? v.CreatedBy.Email : "Unknown",
+                    CreatedByUserName = v.CreatedBy != null ? v.CreatedBy.UserName : "Unknown"
+                })
+                .ToListAsync();
+
+            return Ok(versions);
+        }
+
+        // GET: api/Documents/{id}/versions/{versionId}
+        [HttpGet("{id}/versions/{versionId}")]
+        public async Task<ActionResult<object>> GetVersion(int id, int versionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var document = await _context.Documents
+                .Include(d => d.Permissions)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (document == null) return NotFound();
+
+            // Check access
+            var hasAccess = document.OwnerId == userId || document.Permissions.Any(p => p.UserId == userId);
+            if (!hasAccess) return Forbid();
+
+            var version = await _context.DocumentVersions
+                .Include(v => v.CreatedBy)
+                .FirstOrDefaultAsync(v => v.DocumentId == id && v.Id == versionId);
+
+            if (version == null) return NotFound();
+
+            return Ok(new
+            {
+                version.Id,
+                version.VersionNumber,
+                version.Content,
+                version.CreatedAt,
+                CreatedByEmail = version.CreatedBy != null ? version.CreatedBy.Email : "Unknown"
+            });
+        }
+
+        // POST: api/Documents/{id}/versions/{versionId}/restore
+        [HttpPost("{id}/versions/{versionId}/restore")]
+        public async Task<IActionResult> RestoreVersion(int id, int versionId)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var document = await _context.Documents
+                .Include(d => d.Permissions)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (document == null) return NotFound();
+
+            // Check access: only Owner or Editor can restore versions
+            var isOwner = document.OwnerId == userId;
+            var hasEditorPermission = document.Permissions.Any(p => 
+                p.UserId == userId && (p.Level == PermissionLevel.Editor || p.Level == PermissionLevel.Owner));
+
+            if (!isOwner && !hasEditorPermission)
+            {
+                return Forbid();
+            }
+
+            var version = await _context.DocumentVersions.FirstOrDefaultAsync(v => v.DocumentId == id && v.Id == versionId);
+            if (version == null) return NotFound(new { message = "Version snapshot not found." });
+
+            // Restore document content and binary state
+            document.Content = version.Content;
+            document.ContentBinary = version.ContentBinary;
+            document.UpdatedAt = DateTime.UtcNow;
+            document.LastEditedById = userId;
+            document.Version += 1;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Document {DocumentId} restored to version snapshot {VersionNumber} (ID: {VersionId}) by user {UserId}",
+                id, version.VersionNumber, versionId, userId);
+
+            // Broadcast the restore event and new binary state to all active collaborators
+            var groupName = $"Document_{id}";
+            // Send the restored event so clients replace their entire Yjs doc state
+            await _documentHubContext.Clients.Group(groupName).SendAsync("DocumentRestored", version.ContentBinary ?? Array.Empty<byte>(), document.Version);
+
+            // Notify legacy TaskHub about document update
+            var allowedUserIds = document.Permissions
+                .Select(p => p.UserId)
+                .Append(document.OwnerId)
+                .Distinct()
+                .ToList();
+            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
+
+            return Ok(new { message = $"Document successfully restored to version {version.VersionNumber}." });
+        }
+
+        private string GetUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new InvalidOperationException("User claim not found.");
         }
     }
 }

@@ -7,11 +7,14 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import { ArrowLeft, Share2, Save, CheckCircle2, AlertCircle, Users, X } from 'lucide-react';
+import { ArrowLeft, Share2, Save, CheckCircle2, AlertCircle, Users, X, MessageSquare, History } from 'lucide-react';
 
 import { SignalRYjsProvider } from '../Services/SignalRYjsProvider';
 import EditorToolbar from './EditorToolbar';
 import CollaboratorPresence from './CollaboratorPresence';
+import CommentSidebar from './CommentSidebar';
+import VersionHistory from './VersionHistory';
+import CommentMark from '../Services/CommentMark';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
 const API_URL = `${API_BASE}/api/Documents`;
@@ -45,6 +48,11 @@ const DocumentEditor = ({ theme }) => {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState(null);
   const [shareSuccess, setShareSuccess] = useState(null);
+
+  // Comments and Version History sidebars state
+  const [isCommentSidebarOpen, setIsCommentSidebarOpen] = useState(false);
+  const [isVersionSidebarOpen, setIsVersionSidebarOpen] = useState(false);
+  const [activeCommentId, setActiveCommentId] = useState(null);
 
   // References for cleanup
   const ydocRef = useRef(null);
@@ -139,6 +147,20 @@ const DocumentEditor = ({ theme }) => {
           }
         });
 
+        // Real-time Comment Update listener
+        connection.on('CommentReceived', (comment, action) => {
+          console.log(`SignalR: Comment ${action} event received.`);
+          // Fire a custom event to notify the CommentSidebar
+          window.dispatchEvent(new CustomEvent('comments-updated'));
+        });
+
+        // Document Restored listener
+        connection.on('DocumentRestored', (state, version) => {
+          console.log(`SignalR: Document restored to version ${version}. Reloading canvas...`);
+          // Reload the page to cleanly rebind all editors to the restored state
+          window.location.reload();
+        });
+
       } catch (err) {
         console.error('Failed to initialize SignalR/Collab connection:', err);
         if (active) {
@@ -179,11 +201,20 @@ const DocumentEditor = ({ theme }) => {
           color: userColor,
         }
       }),
+      CommentMark, // Highlight comments inline
     ],
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
       },
+      handleClickOn(view, pos, node, nodePos, event, direct) {
+        if (event.target.hasAttribute('data-comment-id')) {
+          const commentId = event.target.getAttribute('data-comment-id');
+          setActiveCommentId(commentId);
+          setIsVersionSidebarOpen(false);
+          setIsCommentSidebarOpen(true);
+        }
+      }
     },
     onCreate({ editor }) {
       // If we already had content locally loaded from Yjs, apply it
@@ -333,6 +364,38 @@ const DocumentEditor = ({ theme }) => {
             <CollaboratorPresence awareness={providerRef.current.awareness} />
           )}
 
+          {/* Panel Toggles */}
+          <div className="flex items-center space-x-1 border-l border-gray-200 dark:border-gray-800 pl-3">
+            <button
+              onClick={() => {
+                setIsVersionSidebarOpen(false);
+                setIsCommentSidebarOpen(!isCommentSidebarOpen);
+              }}
+              className={`p-2 rounded-full transition duration-150 ${
+                isCommentSidebarOpen 
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title="Toggle Comments"
+            >
+              <MessageSquare size={18} />
+            </button>
+            <button
+              onClick={() => {
+                setIsCommentSidebarOpen(false);
+                setIsVersionSidebarOpen(!isVersionSidebarOpen);
+              }}
+              className={`p-2 rounded-full transition duration-150 ${
+                isVersionSidebarOpen 
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title="Toggle Version History"
+            >
+              <History size={18} />
+            </button>
+          </div>
+
           {/* Save status notification badge */}
           {saveStatus && (
             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold
@@ -345,29 +408,62 @@ const DocumentEditor = ({ theme }) => {
               {saveStatus === 'error' && <AlertCircle size={14} />}
               <span>
                 {saveStatus === 'saving' && 'Saving...'}
-                {saveStatus === 'saved' && 'Saved to Cloud'}
-                {saveStatus === 'error' && 'Save Failed'}
+                {saveStatus === 'saved' && 'Saved'}
+                {saveStatus === 'error' && 'Failed'}
               </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Editor Canvas Card */}
-      <div className={`rounded-xl border shadow-2xl ${cardBg} overflow-hidden`}>
-        {/* Editor formatting toolbar */}
-        <EditorToolbar 
-          editor={editor} 
-          onSave={saveDocument} 
-          isSaving={isSaving}
-          onShare={documentDetails?.ownerId === userPayload?.["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ? () => setIsShareModalOpen(true) : null}
-          theme={theme}
-        />
+      {/* Editor and Sidebar layout wrapper */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Editor Canvas Card */}
+        <div className={`flex-1 w-full rounded-xl border shadow-2xl ${cardBg} overflow-hidden`}>
+          {/* Editor formatting toolbar */}
+          <EditorToolbar 
+            editor={editor} 
+            onSave={saveDocument} 
+            isSaving={isSaving}
+            onShare={documentDetails?.ownerId === userPayload?.["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ? () => setIsShareModalOpen(true) : null}
+            theme={theme}
+          />
 
-        {/* ProseMirror Editor Content */}
-        <div className="bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200">
-          <EditorContent editor={editor} />
+          {/* ProseMirror Editor Content */}
+          <div className="bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200">
+            <EditorContent editor={editor} />
+          </div>
         </div>
+
+        {/* Comments Sidebar Panel */}
+        {isCommentSidebarOpen && (
+          <div className="w-full lg:w-auto h-[600px] lg:h-[500px]">
+            <CommentSidebar
+              documentId={id}
+              token={token}
+              editor={editor}
+              activeCommentId={activeCommentId}
+              setActiveCommentId={setActiveCommentId}
+              onClose={() => setIsCommentSidebarOpen(false)}
+              theme={theme}
+            />
+          </div>
+        )}
+
+        {/* Version History Sidebar Panel */}
+        {isVersionSidebarOpen && (
+          <div className="w-full lg:w-auto h-[600px] lg:h-[500px]">
+            <VersionHistory
+              documentId={id}
+              token={token}
+              onClose={() => setIsVersionSidebarOpen(false)}
+              onRestore={() => {
+                console.log('Version restored. Reloading editor...');
+              }}
+              theme={theme}
+            />
+          </div>
+        )}
       </div>
 
       {/* Share Modal Dialog */}
