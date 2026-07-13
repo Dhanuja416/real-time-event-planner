@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import * as signalR from '@microsoft/signalr';
 import DocumentForm from './DocumentForm';
 import { 
   Trash2, FileText, Search, Users, MessageSquare, 
