@@ -1,21 +1,23 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 using RealTime.API.Models;
 
 namespace RealTime.API.Hubs
 {
-    // The Hub class inherits from SignalR's base Hub to gain WebSocket management capability.
+    [Authorize]
     public class TaskHub : Hub
     {
         /// <summary>
-        /// Sends a notification about a task update (create, update, delete) to all connected clients.
+        /// Sends a notification about a task update (create, update, delete) to the calling user.
         /// </summary>
-        /// <param name="task">The TaskItem object that was changed.</param>
-        /// <param name="action">The type of action performed (e.g., "created", "updated", "deleted").</param>
         public async Task SendTaskUpdate(TaskItem task, string action)
         {
-            // Clients.All targets every browser currently connected to the Hub.
-            // "TaskReceived" is the event name the React client is listening for.
-            await Clients.All.SendAsync("TaskReceived", task, action);
+            var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.User(userId).SendAsync("TaskReceived", task, action);
+            }
         }
     }
 }
