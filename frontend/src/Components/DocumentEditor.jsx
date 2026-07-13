@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import * as signalR from '@microsoft/signalr';
 import * as Y from 'yjs';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -31,10 +30,10 @@ const parseJwt = (token) => {
   }
 };
 
-const DocumentEditor = ({ theme }) => {
+const DocumentEditor = ({ token: tokenProp, hubConnection, theme }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem('jwtToken');
+  const token = tokenProp || localStorage.getItem('jwtToken');
 
   const [documentDetails, setDocumentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,29 +97,14 @@ const DocumentEditor = ({ theme }) => {
 
   // 2. Initialize SignalR + Y.js + Provider
   useEffect(() => {
-    if (!token || error) return;
+    if (!token || !hubConnection || error) return;
 
     let active = true;
     let provider = null;
-    let connection = null;
 
-    const initConnection = async () => {
+    const initConnection = () => {
       try {
-        // Create SignalR connection
-        connection = new signalR.HubConnectionBuilder()
-          .withUrl(HUB_URL, { accessTokenFactory: () => token })
-          .withAutomaticReconnect()
-          .build();
-
-        connectionRef.current = connection;
-
-        await connection.start();
-        console.log('SignalR connected to DocumentHub.');
-
-        if (!active) {
-          connection.stop();
-          return;
-        }
+        connectionRef.current = hubConnection;
 
         // Initialize local awareness user details
         awarenessRef.current.setLocalStateField('user', {
@@ -130,7 +114,7 @@ const DocumentEditor = ({ theme }) => {
         });
 
         // Initialize custom provider
-        provider = new SignalRYjsProvider(connection, parseInt(id), ydocRef.current, awarenessRef.current);
+        provider = new SignalRYjsProvider(hubConnection, parseInt(id), ydocRef.current, awarenessRef.current);
         providerRef.current = provider;
 
         provider.on('status', ({ status }) => {
@@ -144,21 +128,45 @@ const DocumentEditor = ({ theme }) => {
         });
 
         // Real-time Comment Update listener
-        connection.on('CommentReceived', (comment, action) => {
+        const handleCommentReceived = (comment, action) => {
           console.log(`SignalR: Comment ${action} event received.`);
           // Fire a custom event to notify the CommentSidebar
           window.dispatchEvent(new CustomEvent('comments-updated'));
-        });
+        };
 
-        // Document Restored listener
-        connection.on('DocumentRestored', (state, version) => {
-          console.log(`SignalR: Document restored to version ${version}. Reloading canvas...`);
-          // Reload the page to cleanly rebind all editors to the restored state
-          window.location.reload();
-        });
+        // Document Restored listener - SPA-friendly hot rollback!
+        const handleDocumentRestored = (stateBytes, version) => {
+          console.log(`SignalR: Document restored to version ${version}. Restoring state...`);
+          const uint8State = providerRef.current?._convertToUint8Array(stateBytes);
+          if (uint8State && uint8State.length > 0) {
+            const ydoc = ydocRef.current;
+            
+            // Clear current Y.js XML fragment content and apply the restored state
+            ydoc.transact(() => {
+              const xmlFragment = ydoc.getXmlFragment('default');
+              if (xmlFragment.length > 0) {
+                xmlFragment.delete(0, xmlFragment.length);
+              }
+              Y.applyUpdate(ydoc, uint8State, providerRef.current);
+            }, providerRef.current);
+          }
+        };
+
+        hubConnection.on('CommentReceived', handleCommentReceived);
+        hubConnection.on('DocumentRestored', handleDocumentRestored);
+
+        return () => {
+          active = false;
+          if (provider) {
+            provider.destroy();
+          }
+          hubConnection.off('CommentReceived', handleCommentReceived);
+          hubConnection.off('DocumentRestored', handleDocumentRestored);
+          connectionRef.current = null;
+        };
 
       } catch (err) {
-        console.error('Failed to initialize SignalR/Collab connection:', err);
+        console.error('Failed to initialize collaboration connection:', err);
         if (active) {
           setError('Failed to establish real-time collaboration server connection.');
           setLoading(false);
@@ -166,18 +174,9 @@ const DocumentEditor = ({ theme }) => {
       }
     };
 
-    initConnection();
-
-    return () => {
-      active = false;
-      if (provider) {
-        provider.destroy();
-      }
-      if (connection) {
-        connection.stop();
-      }
-    };
-  }, [id, token, error, userName, userEmail, userColor]);
+    const cleanup = initConnection();
+    return cleanup;
+  }, [id, token, hubConnection, error, userName, userEmail, userColor]);
 
   // 3. Set up Tiptap Editor
   const editor = useEditor({

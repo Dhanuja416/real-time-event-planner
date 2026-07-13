@@ -110,6 +110,13 @@ namespace RealTime.API.Data
                 .WithMany()
                 .HasForeignKey(c => c.ResolvedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure TaskItem.Owner relationship
+            modelBuilder.Entity<TaskItem>()
+                .HasOne(t => t.Owner)
+                .WithMany()
+                .HasForeignKey(t => t.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

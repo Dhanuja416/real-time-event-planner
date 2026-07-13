@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import * as signalR from '@microsoft/signalr';
 import DocumentForm from './DocumentForm';
 import { 
   Trash2, FileText, Search, Users, MessageSquare, 
@@ -10,8 +9,6 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7072';
 const API_URL = `${API_BASE}/api/Documents`;
-const HUB_URL = `${API_BASE}/taskhub`;
-
 const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split('.')[1]));
@@ -20,7 +17,7 @@ const parseJwt = (token) => {
   }
 };
 
-const DocumentList = ({ token, theme }) => {
+const DocumentList = ({ token, hubConnection, theme }) => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,34 +117,20 @@ const DocumentList = ({ token, theme }) => {
 
   // SignalR real-time updates for list
   useEffect(() => {
-    let connection = null;
-    if (!token) return;
+    if (!hubConnection) return;
 
-    const startSignalR = async () => {
-      try {
-        connection = new signalR.HubConnectionBuilder()
-          .withUrl(HUB_URL, { accessTokenFactory: () => token })
-          .withAutomaticReconnect()
-          .build();
-
-        connection.on('DocumentReceived', (doc, action) => {
-          console.log(`Dashboard SignalR: Document ${action}. Auto-refreshing.`);
-          fetchDocuments();
-          fetchAnalytics();
-        });
-
-        await connection.start();
-      } catch (err) {
-        console.error('Dashboard SignalR Error:', err);
-      }
+    const handleDocumentReceived = (doc, action) => {
+      console.log(`Dashboard SignalR: Document ${action}. Auto-refreshing.`);
+      fetchDocuments();
+      fetchAnalytics();
     };
 
-    startSignalR();
+    hubConnection.on('DocumentReceived', handleDocumentReceived);
 
     return () => {
-      if (connection) connection.stop();
+      hubConnection.off('DocumentReceived', handleDocumentReceived);
     };
-  }, [token, fetchDocuments, fetchAnalytics]);
+  }, [hubConnection, fetchDocuments, fetchAnalytics]);
 
   // Delete Document
   const deleteDocument = async (docId) => {

@@ -137,7 +137,7 @@ function App() {
                   </header>
 
                   <main className="container mx-auto py-8 px-4">
-                    <DocumentList token={token} theme={theme} />
+                    <DocumentList token={token} hubConnection={hubConnection} theme={theme} />
                   </main>
                 </div>
               ) : (
@@ -178,7 +178,7 @@ function App() {
                   </header>
 
                   <main className="container mx-auto py-8 px-4">
-                    <DocumentEditor theme={theme} />
+                    <DocumentEditor token={token} hubConnection={hubConnection} theme={theme} />
                   </main>
                 </div>
               ) : (

@@ -17,20 +17,17 @@ namespace RealTime.API.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IHubContext<TaskHub> _hubContext;
         private readonly IHubContext<DocumentHub> _documentHubContext;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<DocumentsController> _logger;
 
         public DocumentsController(
             AppDbContext context,
-            IHubContext<TaskHub> hubContext,
             IHubContext<DocumentHub> documentHubContext,
             UserManager<IdentityUser> userManager,
             ILogger<DocumentsController> logger)
         {
             _context = context;
-            _hubContext = hubContext;
             _documentHubContext = documentHubContext;
             _userManager = userManager;
             _logger = logger;
@@ -181,7 +178,7 @@ namespace RealTime.API.Controllers
             _logger.LogInformation("Document {DocumentId} created by user {UserId}", document.Id, userId);
 
             // Broadcast only to the document owner (no collaborators yet on a new doc)
-            await _hubContext.Clients.User(userId).SendAsync("DocumentReceived", document, "created");
+            await _documentHubContext.Clients.User(userId).SendAsync("DocumentReceived", document, "created");
 
             return CreatedAtAction(nameof(GetDocument), new { id = document.Id }, document);
         }
@@ -236,7 +233,7 @@ namespace RealTime.API.Controllers
                     .Distinct()
                     .ToList();
 
-                await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
+                await _documentHubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -285,7 +282,7 @@ namespace RealTime.API.Controllers
             _logger.LogInformation("Document {DocumentId} deleted by user {UserId}", id, userId);
 
             // Broadcast only to users who had access
-            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "deleted");
+            await _documentHubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "deleted");
 
             return NoContent();
         }
@@ -392,7 +389,7 @@ namespace RealTime.API.Controllers
                 .Distinct()
                 .ToList();
 
-            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "shared");
+            await _documentHubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "shared");
 
             return Ok(new { message = $"Document shared with {shareDto.UserEmail} as {shareDto.PermissionLevel}." });
         }
@@ -508,13 +505,13 @@ namespace RealTime.API.Controllers
             // Send the restored event so clients replace their entire Yjs doc state
             await _documentHubContext.Clients.Group(groupName).SendAsync("DocumentRestored", version.ContentBinary ?? Array.Empty<byte>(), document.Version);
 
-            // Notify legacy TaskHub about document update
+            // Notify active DocumentHub clients about document update
             var allowedUserIds = document.Permissions
                 .Select(p => p.UserId)
                 .Append(document.OwnerId)
                 .Distinct()
                 .ToList();
-            await _hubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
+            await _documentHubContext.Clients.Users(allowedUserIds).SendAsync("DocumentReceived", document, "updated");
 
             return Ok(new { message = $"Document successfully restored to version {version.VersionNumber}." });
         }
