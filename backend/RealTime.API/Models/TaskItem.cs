@@ -1,4 +1,7 @@
-﻿namespace RealTime.API.Models // <-- Must be this namespace
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
+
+namespace RealTime.API.Models // <-- Must be this namespace
 {
     public class TaskItem
     {
@@ -8,5 +11,11 @@
         public bool IsComplete { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? DueDate { get; set; }
+
+        [Required]
+        public string OwnerId { get; set; } = string.Empty;
+
+        // Navigation property
+        public IdentityUser? Owner { get; set; }
     }
 }
